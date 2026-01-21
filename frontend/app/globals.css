@@ -4,44 +4,82 @@
 
 :root {
   --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 15, 23, 42;
-  /* Slate 900 */
-  --background-end-rgb: 30, 41, 59;
-  /* Slate 800 */
+  --background-start-rgb: 0, 0, 0;
+  --background-end-rgb: 0, 0, 0;
 }
 
 body {
+  margin: 0;
+  padding: 0;
+  background-color: #020617;
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(to bottom right,
-      rgb(var(--background-start-rgb)),
-      rgb(var(--background-end-rgb)));
-  height: 100vh;
-  width: 100vw;
   overflow: hidden;
-  font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* Custom Scrollbar for sleek look */
-::-webkit-scrollbar {
-  width: 6px;
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
 }
 
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
 }
 
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(234, 179, 8, 0.3);
   border-radius: 10px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(234, 179, 8, 0.5);
 }
 
-/* Leaflet Map Dark Mode Tweaks (Optional: Invert colors for dark map feel) */
+/* Leaflet Overrides */
+.leaflet-popup-content-wrapper {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.leaflet-popup-tip {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+
+.custom-marker-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Pulse animation for markers */
+@keyframes pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+
+  50% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Leaflet container dark theme */
 .leaflet-container {
   background: #0f172a !important;
+  font-family: inherit;
 }
 
-/* If we want a dark map tiles, we can use a different tile provider in Map.tsx later */
+.leaflet-control-zoom a {
+  background: rgba(0, 0, 0, 0.7) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: rgba(0, 0, 0, 0.9) !important;
+  border-color: rgba(234, 179, 8, 0.5) !important;
+}

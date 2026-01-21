@@ -1,6 +1,6 @@
 'use client';
 
-import { Map as MapIcon, Calendar, ArrowRight, Clock, MapPin } from 'lucide-react';
+import { Map as MapIcon, ArrowRight, Clock, Shield, Circle } from 'lucide-react';
 
 interface Convoy {
     id: number;
@@ -15,68 +15,61 @@ interface ConvoyListProps {
     convoys: Convoy[];
 }
 
-const ConvoyList = ({ convoys }: ConvoyListProps) => {
+export default function ConvoyList({ convoys }: ConvoyListProps) {
     return (
-        <div className="w-full h-full bg-slate-950 border-r border-slate-800 flex flex-col text-slate-200">
-            {/* Header */}
-            <div className="p-5 border-b border-slate-800 bg-slate-900">
-                <h2 className="text-lg font-bold text-white flex items-center gap-3">
-                    <div className="p-2 bg-purple-600 rounded-lg">
-                        <MapIcon className="h-5 w-5 text-white" />
+        <div className="flex flex-col gap-2 p-3">
+            {convoys.map((convoy) => (
+                <div
+                    key={convoy.id}
+                    className="group p-3 rounded-xl bg-black/40 backdrop-blur-sm border border-white/10 hover:border-yellow-500/30 hover:bg-black/60 transition-all duration-300 cursor-pointer"
+                >
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-2">
+                            <Shield className="h-4 w-4 text-slate-500 group-hover:text-yellow-500 transition-colors" />
+                            <h3 className="text-sm font-bold text-white group-hover:text-yellow-400 transition-colors">{convoy.name}</h3>
+                        </div>
+                        <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${convoy.status === 'IN_TRANSIT'
+                                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                                : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                            }`}>
+                            <Circle className={`h-2 w-2 fill-current ${convoy.status === 'IN_TRANSIT' && 'animate-pulse'}`} />
+                            {convoy.status === 'IN_TRANSIT' ? 'LIVE' : 'PLAN'}
+                        </div>
                     </div>
-                    Convoy Operations
-                </h2>
-                <p className="text-sm text-slate-400 mt-2">
-                    {convoys.length} missions scheduled
-                </p>
-            </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {convoys.map((convoy) => (
-                    <div
-                        key={convoy.id}
-                        className="group p-4 rounded-2xl bg-slate-900 border border-slate-800/50 hover:bg-slate-800 hover:shadow-xl transition-all duration-300 cursor-pointer"
-                    >
-                        <div className="flex justify-between items-start mb-3">
-                            <h3 className="font-semibold text-base text-white">{convoy.name}</h3>
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium
-                    ${convoy.status === 'IN_TRANSIT'
-                                    ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                                    : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}
-                `}>
-                                {convoy.status === 'IN_TRANSIT' ? 'In Transit' : 'Planned'}
+                    {/* Route Display */}
+                    <div className="flex items-center gap-2 mb-3 p-2 bg-black/40 rounded-lg border border-white/5">
+                        <div className="flex-1 text-xs font-bold text-slate-300 truncate text-right">
+                            {convoy.start_location}
+                        </div>
+                        <ArrowRight className="h-3 w-3 text-yellow-500 shrink-0" />
+                        <div className="flex-1 text-xs font-bold text-slate-300 truncate">
+                            {convoy.end_location}
+                        </div>
+                    </div>
+
+                    {/* Time Info */}
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-white/5">
+                        <div className="flex items-center gap-1.5">
+                            <Clock className="h-3 w-3" />
+                            <span className="font-mono">
+                                START: {new Date(convoy.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                         </div>
-
-                        {/* Route */}
-                        <div className="flex items-center gap-3 mb-4 bg-slate-950 p-2.5 rounded-lg border border-slate-800/50">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                                <span className="w-2 h-2 rounded-full bg-slate-500"></span>
-                                <span className="text-sm font-medium text-slate-300 truncate">{convoy.start_location}</span>
-                            </div>
-                            <ArrowRight className="h-4 w-4 text-slate-600 flex-shrink-0" />
-                            <div className="flex items-center gap-1.5 min-w-0">
-                                <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                                <span className="text-sm font-medium text-slate-300 truncate">{convoy.end_location}</span>
-                            </div>
-                        </div>
-
-                        {/* Time Info */}
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs text-slate-400">
-                            <div className="flex items-center gap-1.5">
-                                <Calendar className="h-3.5 w-3.5" />
-                                <span>{new Date(convoy.start_time).toLocaleDateString()}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <Clock className="h-3.5 w-3.5" />
-                                <span>{new Date(convoy.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                            </div>
+                        <div className="font-mono text-slate-500">
+                            ETA: {new Date(new Date(convoy.start_time).getTime() + 3600000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                     </div>
-                ))}
-            </div>
+                </div>
+            ))}
+
+            {convoys.length === 0 && (
+                <div className="text-center p-12 text-slate-500 text-sm">
+                    <MapIcon className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                    No active convoys
+                </div>
+            )}
         </div>
     );
-};
-
-export default ConvoyList;
+}

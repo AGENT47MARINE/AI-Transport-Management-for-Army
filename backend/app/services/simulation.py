@@ -3,8 +3,9 @@ import sys
 import os
 import random
 
-# Add the parent directory to sys.path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add the backend root directory to sys.path
+backend_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, backend_root)
 
 from app.core.database import SessionLocal, engine
 from app.models.asset import TransportAsset

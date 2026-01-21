@@ -3,6 +3,7 @@ uvicorn[standard]
 sqlalchemy
 asyncpg
 greenlet
+ortools
 pydantic-settings
 python-dotenv
 alembic
