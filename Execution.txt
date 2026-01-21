@@ -1,0 +1,10 @@
+cd backend
+python app/services/simulation.py
+
+cd backend
+uvicorn app.main:app --reload
+
+cd frontend
+npm run dev
+
+run docker for database

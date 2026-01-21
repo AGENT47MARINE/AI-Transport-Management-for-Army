@@ -10,6 +10,7 @@ interface Asset {
   asset_type: string;
   current_lat?: number;
   current_long?: number;
+  bearing?: number;
   is_available: boolean;
 }
 
@@ -124,30 +125,61 @@ export default function MapComponent({ assets, routes = [] }: MapProps) {
     // --- RENDER ASSETS ---
     assets.forEach(asset => {
       if (asset.current_lat && asset.current_long) {
+
+        // Create rotatable icon
         const color = asset.is_available ? '#10b981' : '#f59e0b';
+        const bearing = asset.bearing || 0;
 
-        // Outer pulsing ring (for visual effect)
-        const pulse = L.circleMarker([asset.current_lat, asset.current_long], {
-          radius: 15,
-          fillColor: color,
-          color: 'transparent',
-          fillOpacity: 0.2
-        }).addTo(map);
+        const iconHtml = `
+          <div style="
+            width: 24px; 
+            height: 24px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            transform: rotate(${bearing}deg);
+            transition: transform 0.3s ease-out; 
+          ">
+            <!-- Asset Arrow/Triangle -->
+            <div style="
+              width: 0; 
+              height: 0; 
+              border-left: 8px solid transparent;
+              border-right: 8px solid transparent;
+              border-bottom: 16px solid ${color};
+              filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+            "></div>
+            
+            <!-- Center Dot -->
+            <div style="
+              position: absolute;
+              width: 4px; 
+              height: 4px; 
+              background: white; 
+              border-radius: 50%;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+            "></div>
+          </div>
+        `;
 
-        // Core dot
-        const marker = L.circleMarker([asset.current_lat, asset.current_long], {
-          radius: 6,
-          fillColor: color,
-          color: '#fff', // White border for contrast
-          weight: 2,
-          opacity: 1,
-          fillOpacity: 1
+        const icon = L.divIcon({
+          html: iconHtml,
+          className: 'custom-vehicle-icon',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+
+        const marker = L.marker([asset.current_lat, asset.current_long], {
+          icon: icon
         }).addTo(map);
 
         const popupContent = `
           <div style="font-family: system-ui; min-width: 150px; background: #0f172a; color: white; border: 1px solid #334155; padding: 10px; border-radius: 6px;">
             <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">${asset.name}</div>
             <div style="color: #94a3b8; font-size: 11px;">${asset.asset_type}</div>
+            <div style="font-size: 10px; color: #64748b;">Heading: ${Math.round(bearing)}°</div>
             <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #334155;">
               <span style="color: ${asset.is_available ? '#10b981' : '#f59e0b'}; font-weight: bold; font-size: 12px;">
                 ${asset.is_available ? '● Available' : '● Busy'}
@@ -157,10 +189,7 @@ export default function MapComponent({ assets, routes = [] }: MapProps) {
         `;
 
         marker.bindPopup(popupContent);
-        pulse.bindPopup(popupContent); // Binding to pulse too makes clicking easier
-
         markersRef.current.push(marker);
-        markersRef.current.push(pulse);
       }
     });
 

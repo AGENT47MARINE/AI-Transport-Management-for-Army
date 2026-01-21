@@ -17,5 +17,6 @@ class TransportAsset(Base):
     # Location (simplified as lat/long for now, can be PostGIS Point later)
     current_lat = Column(Float, nullable=True)
     current_long = Column(Float, nullable=True)
+    bearing = Column(Float, default=0.0, doc="Heading in degrees (0=North, 90=East)")
     
     fuel_status = Column(Float, default=100.0, doc="Fuel percentage")
