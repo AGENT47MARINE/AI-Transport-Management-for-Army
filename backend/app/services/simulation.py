@@ -37,8 +37,8 @@ async def simulate():
 
     while True:
         async with SessionLocal() as db:
-            # 1. Fetch Assets and Route (NH-44 for demo)
-            route_res = await db.execute(select(Route).where(Route.name.contains("NH-44")))
+            # 1. Fetch Assets and Route (High Fidelity Sat-Nav Route)
+            route_res = await db.execute(select(Route).where(Route.name.contains("Sat-Nav")))
             route = route_res.scalars().first()
             
             assets_res = await db.execute(select(TransportAsset))
