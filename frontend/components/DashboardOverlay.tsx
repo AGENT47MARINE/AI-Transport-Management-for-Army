@@ -13,7 +13,8 @@ export default function DashboardOverlay() {
         asset_type: 'Truck 4x4',
         capacity_tons: 2.5,
         lat: 32.7,
-        long: 74.8
+        long: 74.8,
+        search_query: ''
     });
 
     // Convoy Form State
@@ -181,7 +182,7 @@ export default function DashboardOverlay() {
                             <span>Plan Route</span>
                         </button>
                         <button
-                            onClick={() => setActiveModal('convoy')}
+                            onClick={() => window.location.href = '/convoys/new'}
                             style={{
                                 backgroundColor: '#1e293b',
                                 color: 'white',
@@ -303,6 +304,56 @@ export default function DashboardOverlay() {
                                         <option>Fuel Tanker</option>
                                     </select>
                                 </div>
+
+                                {/* Asset Location Search */}
+                                <div>
+                                    <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '5px' }}>Search Location</label>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Type area name..."
+                                            value={assetForm.search_query || ''}
+                                            onChange={e => setAssetForm({ ...assetForm, search_query: e.target.value })}
+                                            style={{ flex: 1, padding: '10px', background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: 'white' }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                if (!assetForm.search_query || assetForm.search_query.length < 3) return;
+                                                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${assetForm.search_query}`);
+                                                const data = await res.json();
+                                                setStartSearchResults(data); // Reusing startSearchResults for asset search to save state
+                                            }}
+                                            style={{ padding: '0 15px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                                        >
+                                            Search
+                                        </button>
+                                    </div>
+                                    {/* Reuse Start Results for Asset Search (using same state for simplicity) */}
+                                    {activeModal === 'asset' && startSearchResults.length > 0 && (
+                                        <div style={{ marginTop: '5px', maxHeight: '100px', overflowY: 'auto', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px' }}>
+                                            {startSearchResults.map((res, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    onClick={() => {
+                                                        setAssetForm({
+                                                            ...assetForm,
+                                                            lat: parseFloat(res.lat),
+                                                            long: parseFloat(res.lon),
+                                                            search_query: res.display_name.split(',')[0]
+                                                        });
+                                                        setStartSearchResults([]);
+                                                    }}
+                                                    style={{ padding: '8px', borderBottom: '1px solid #1e293b', cursor: 'pointer', fontSize: '12px', color: '#cbd5e1' }}
+                                                    className="hover:bg-slate-800"
+                                                >
+                                                    {res.display_name}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                     <div>
                                         <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '5px' }}>Lat</label>

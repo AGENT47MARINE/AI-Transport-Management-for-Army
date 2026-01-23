@@ -17,6 +17,7 @@ class Convoy(Base):
     end_location = Column(String, doc="Name of destination")
     
     start_time = Column(DateTime, default=datetime.utcnow)
+    estimated_arrival_time = Column(DateTime, nullable=True)
     status = Column(String, default="PLANNED", doc="PLANNED, IN_TRANSIT, COMPLETED, HALTED")
     
     # Link to a specific route plan

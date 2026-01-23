@@ -15,6 +15,8 @@ class ConvoyCreate(ConvoyBase):
     start_long: Optional[float] = None
     end_lat: Optional[float] = None
     end_long: Optional[float] = None
+    start_time: Optional[datetime] = None
+    estimated_arrival_time: Optional[datetime] = None
 
 class Convoy(ConvoyBase):
     id: int
