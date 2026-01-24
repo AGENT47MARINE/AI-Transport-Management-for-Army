@@ -100,7 +100,7 @@ export default function LoginPage() {
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/army_logo.png"
+            src="/indian_army_logo_v2.png"
             alt="Army Logo"
             style={{
               width: '100%',
