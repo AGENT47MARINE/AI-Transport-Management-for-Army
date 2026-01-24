@@ -45,6 +45,10 @@ def calculate_bearing(lat1, lon1, lat2, lon2):
 async def simulate():
     print(f"Starting Realistic Simulation Engine (Sat-Nav Mode)...")
     
+    # Cache for Civil Route
+    civil_route_cache = None
+
+    
     # In-memory physics state
     # { asset_id: { 'current_index': 0, 'progress_km': 0.0, 'speed_kmh': 0.0, 'last_bearing': 0.0 } }
     asset_states = {}
@@ -66,10 +70,92 @@ async def simulate():
                 convoys_res = await db.execute(query)
                 active_convoys = convoys_res.scalars().all()
 
-                if not active_convoys:
-                    # print("No active convoys in transit...")
-                    await asyncio.sleep(2)
-                    continue
+                convoys_res = await db.execute(query)
+                active_convoys = convoys_res.scalars().all()
+
+                # --- CIVIL TRAFFIC SIMULATION ---
+                # Fetch Civil Traffic Assets
+                stmt_civil = select(TransportAsset).where(TransportAsset.asset_source == "CIVIL_OBSERVED")
+                res_civil = await db.execute(stmt_civil)
+                civil_assets = res_civil.scalars().all()
+
+                # If no civil assets, seed them
+                if len(civil_assets) < 10:
+                    print("Seeding Synthetic Civil Traffic...")
+                    from app.services.routing import fetch_osrm_route
+                    # Jammu to Srinagar
+                    route_pts = await fetch_osrm_route([32.7266, 74.8570], [34.0837, 74.7973])
+                    
+                    if route_pts:
+                        for i in range(15):
+                           # Pick random start point on route
+                           rnd_idx = random.randint(0, len(route_pts)-2)
+                           pt = route_pts[rnd_idx]
+                           
+                           new_asset = TransportAsset(
+                               name=f"Civil-Car-{random.randint(1000,9999)}",
+                               asset_type="CAR",
+                               asset_source="CIVIL_OBSERVED",
+                               capacity_tons=0.5,
+                               current_lat=pt[0],
+                               current_long=pt[1],
+                               is_available=True
+                           )
+                           db.add(new_asset)
+                           civil_assets.append(new_asset)
+                        await db.commit()
+
+                # Ensure we have the civil route
+                if not civil_route_cache:
+                     from app.services.routing import fetch_osrm_route
+                     civil_route_cache = await fetch_osrm_route([32.7266, 74.8570], [34.0837, 74.7973])
+
+                # Move Civil Assets along the cached route
+                if civil_route_cache:
+                    for asset in civil_assets:
+                        state = asset_states.get(asset.id)
+                        if not state:
+                            # Initialize at random point on route if new
+                            start_idx = random.randint(0, len(civil_route_cache)-100)
+                            state = { 'current_index': start_idx, 'progress_km': 0.0, 'speed_kmh': float(random.randint(40, 90)), 'last_bearing': 0.0 }
+                            asset_states[asset.id] = state
+                        
+                        dist_remaining_km = state['speed_kmh'] * (UPDATE_INTERVAL_SEC / 3600.0)
+                        waypoints = civil_route_cache # Use the shared route
+                        
+                        safety_loop_count = 0
+                        while dist_remaining_km > 0:
+                            safety_loop_count += 1
+                            if safety_loop_count > 50: break
+                            
+                            idx = state['current_index']
+                            if idx >= len(waypoints) - 1:
+                                state['current_index'] = 0 # Loop back to Jammu
+                                idx = 0
+                            
+                            curr_pt = waypoints[idx]
+                            next_pt = waypoints[idx + 1]
+                            seg_dist_km = haversine_distance(curr_pt[0], curr_pt[1], next_pt[0], next_pt[1])
+                            
+                            if seg_dist_km < 0.0001: 
+                                state['current_index'] += 1; continue
+                                
+                            bearing = calculate_bearing(curr_pt[0], curr_pt[1], next_pt[0], next_pt[1])
+                            dist_on_seg_km = max(0.0, seg_dist_km - state['progress_km'])
+                            
+                            if dist_remaining_km >= dist_on_seg_km:
+                                dist_remaining_km -= dist_on_seg_km
+                                state['current_index'] += 1
+                                state['progress_km'] = 0.0
+                            else:
+                                state['progress_km'] += dist_remaining_km
+                                dist_remaining_km = 0
+                                frac = state['progress_km'] / seg_dist_km
+                                asset.current_lat = curr_pt[0] + (next_pt[0] - curr_pt[0]) * frac
+                                asset.current_long = curr_pt[1] + (next_pt[1] - curr_pt[1]) * frac
+                                asset.bearing = bearing
+                                state['last_bearing'] = bearing
+
 
                 for convoy in active_convoys:
                     if not convoy.route or not convoy.route.waypoints:

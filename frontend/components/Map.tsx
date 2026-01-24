@@ -11,6 +11,7 @@ interface Asset {
   id: number;
   name: string;
   asset_type: string;
+  asset_source?: string; // NEW
   current_lat?: number;
   current_long?: number;
   bearing?: number;
@@ -296,7 +297,9 @@ export default function MapComponent({ assets, routes = [], convoys = [], checkp
     // --- RENDER MOVING ASSETS (NO CLUSTER) ---
     movingAssets.forEach(asset => {
       if (asset.current_lat && asset.current_long) {
-        const color = asset.is_available ? '#10b981' : '#f59e0b';
+        let color = asset.is_available ? '#10b981' : '#f59e0b';
+        if (asset.asset_source === 'CIVIL_OBSERVED') color = '#3b82f6'; // Blue for traffic
+        if (asset.asset_source === 'CIVIL_REQ') color = '#f97316'; // Orange for hired
         const bearing = asset.bearing || 0;
         const iconHtml = `
               <div style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; transform: rotate(${bearing}deg); transition: transform 0.3s ease-out;">
@@ -344,7 +347,9 @@ export default function MapComponent({ assets, routes = [], convoys = [], checkp
           if (asset.current_lat && asset.current_long) {
 
             // Create rotatable icon
-            const color = asset.is_available ? '#10b981' : '#f59e0b';
+            let color = asset.is_available ? '#10b981' : '#f59e0b';
+            if (asset.asset_source === 'CIVIL_OBSERVED') color = '#3b82f6'; // Blue
+            if (asset.asset_source === 'CIVIL_REQ') color = '#f97316'; // Orange
             const bearing = asset.bearing || 0;
 
             const iconHtml = `

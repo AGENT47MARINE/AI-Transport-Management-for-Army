@@ -4,6 +4,7 @@ from typing import Optional
 class TransportAssetBase(BaseModel):
     name: str
     asset_type: str
+    asset_source: str = "MILITARY"
     capacity_tons: float
     is_available: bool = True
     current_lat: Optional[float] = None

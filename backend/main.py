@@ -36,6 +36,8 @@ app.include_router(convoys.router, prefix=f"{settings.API_V1_STR}/convoys", tags
 app.include_router(routes.router, prefix=f"{settings.API_V1_STR}/routes", tags=["routes"])
 app.include_router(optimization.router, prefix=f"{settings.API_V1_STR}/optimization", tags=["optimization"])
 app.include_router(checkpoints.router, prefix=f"{settings.API_V1_STR}/checkpoints", tags=["checkpoints"])
+from app.api.endpoints import logistics
+app.include_router(logistics.router, prefix=f"{settings.API_V1_STR}/logistics", tags=["logistics"])
 
 # Basic Health Check Endpoint
 @app.get("/")

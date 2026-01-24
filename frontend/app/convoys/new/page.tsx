@@ -319,7 +319,7 @@ export default function NewConvoyPage() {
                             <h2 style={{ fontSize: '18px', marginBottom: '15px', color: '#10b981' }}>Allocated Assets</h2>
                             <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '10px' }}>Select vehicles to assign to this convoy.</p>
 
-                            <div style={{ flex: 1, overflowY: 'auto', background: '#0f172a', borderRadius: '8px', border: '1px solid #475569', padding: '10px' }}>
+                            <div className="custom-scrollbar" style={{ flex: 1, maxHeight: '50vh', overflowY: 'auto', background: '#0f172a', borderRadius: '8px', border: '1px solid #475569', padding: '10px' }}>
                                 {assets.map(asset => (
                                     <div key={asset.id} onClick={() => toggleAsset(asset.id)} style={{
                                         display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', marginBottom: '5px',
