@@ -32,4 +32,8 @@ class LogisticsIndent(Base):
     # Meta
     arrival_time_est = Column(DateTime)
     status = Column(String, default="PENDING", doc="PENDING, APPROVED, FULFILLED")
+    
+    request_type = Column(String, default="STANDARD", doc="STANDARD, OVERSTAY")
+    remarks = Column(String, nullable=True)
+    
     created_at = Column(DateTime, default=datetime.utcnow)

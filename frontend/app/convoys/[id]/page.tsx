@@ -129,9 +129,9 @@ export default function ConvoyDetailPage({ params }: { params: Promise<{ id: str
                     boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)'
                 }}>
                     <div style={{ marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '10px' }}>
-                        <a href="/" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <button onClick={() => window.location.href = '/dashboard'} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', textDecoration: 'none', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                             ← BACK TO DASHBOARD
-                        </a>
+                        </button>
                         <h1 style={{ fontSize: '24px', margin: '10px 0 5px 0', color: '#10b981', fontFamily: 'system-ui' }}>
                             {convoy.name}
                         </h1>

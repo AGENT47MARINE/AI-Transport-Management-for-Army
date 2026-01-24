@@ -342,7 +342,7 @@ export default function Dashboard() {
                             {convoys.filter(c => c.name.toLowerCase().includes(convoySearch.toLowerCase()) || c.start_location.toLowerCase().includes(convoySearch.toLowerCase())).map((convoy) => (
                                 <div
                                     key={convoy.id}
-                                    onClick={() => window.location.href = `/convoys/${convoy.id}`}
+                                    onClick={() => router.push(`/convoys/${convoy.id}`)}
                                     style={{
                                         background: 'rgba(255,255,255,0.05)',
                                         border: '1px solid rgba(255,255,255,0.1)',

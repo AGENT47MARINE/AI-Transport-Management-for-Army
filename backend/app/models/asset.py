@@ -31,3 +31,6 @@ class TransportAsset(Base):
 
     convoy_id = Column(Integer, ForeignKey("convoys.id"), nullable=True)
     convoy = relationship("Convoy", back_populates="assets")
+
+    current_checkpoint_id = Column(Integer, ForeignKey("checkpoints.id"), nullable=True)
+    current_checkpoint = relationship("app.models.checkpoint.Checkpoint")

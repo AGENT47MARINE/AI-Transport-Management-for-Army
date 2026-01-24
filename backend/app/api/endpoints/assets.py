@@ -21,10 +21,15 @@ async def create_asset(asset: TransportAssetCreate, db: AsyncSession = Depends(g
     return new_asset
 
 @router.get("/", response_model=List[AssetSchema])
-async def read_assets(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
+async def read_assets(skip: int = 0, limit: int = 100, checkpoint_id: int = None, db: AsyncSession = Depends(get_db)):
     """
-    Retrieve a list of Transport Assets.
+    Retrieve a list of Transport Assets. Optional filter by Checkpoint ID for idle assets.
     """
-    result = await db.execute(select(TransportAsset).offset(skip).limit(limit))
+    query = select(TransportAsset).offset(skip).limit(limit)
+    
+    if checkpoint_id:
+        query = query.where(TransportAsset.current_checkpoint_id == checkpoint_id)
+        
+    result = await db.execute(query)
     assets = result.scalars().all()
     return assets

@@ -84,6 +84,7 @@ export default function NewAssetPage() {
                                     value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
                                     placeholder="e.g. ALS-Stallion-05"
                                     className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
+                                    style={{ color: 'white' }}
                                 />
                             </div>
 
@@ -93,6 +94,7 @@ export default function NewAssetPage() {
                                     <select
                                         value={form.asset_type} onChange={e => setForm({ ...form, asset_type: e.target.value })}
                                         className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
+                                        style={{ color: 'white' }}
                                     >
                                         <option value="TRUCK">Truck</option>
                                         <option value="JEEP">Jeep</option>
@@ -107,6 +109,7 @@ export default function NewAssetPage() {
                                         type="number" step="0.1" min="0"
                                         value={form.capacity_tons} onChange={e => setForm({ ...form, capacity_tons: parseFloat(e.target.value) })}
                                         className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
+                                        style={{ color: 'white' }}
                                     />
                                 </div>
                             </div>
@@ -127,6 +130,7 @@ export default function NewAssetPage() {
                                         value={form.driver_name} onChange={e => setForm({ ...form, driver_name: e.target.value })}
                                         placeholder="Driver Name"
                                         className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 pl-9 focus:outline-none focus:border-[#3b82f6]"
+                                        style={{ color: 'white' }}
                                     />
                                 </div>
                             </div>
@@ -138,6 +142,7 @@ export default function NewAssetPage() {
                                         type="number" min="0"
                                         value={form.personnel_count} onChange={e => setForm({ ...form, personnel_count: parseInt(e.target.value) })}
                                         className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
+                                        style={{ color: 'white' }}
                                     />
                                 </div>
                                 <div>
@@ -148,6 +153,7 @@ export default function NewAssetPage() {
                                             type="number" min="0" max="100"
                                             value={form.fuel_status} onChange={e => setForm({ ...form, fuel_status: parseFloat(e.target.value) })}
                                             className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 pl-9 focus:outline-none focus:border-[#3b82f6]"
+                                            style={{ color: 'white' }}
                                         />
                                     </div>
                                 </div>
@@ -172,6 +178,7 @@ export default function NewAssetPage() {
                                         value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                                         placeholder="Enter city or place..."
                                         className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
+                                        style={{ color: 'white' }}
                                     />
                                     <button type="button" onClick={() => handleSearchLocation(searchQuery)} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0 15px', cursor: 'pointer' }}>
                                         <Search size={18} />
