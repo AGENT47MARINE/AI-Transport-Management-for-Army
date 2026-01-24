@@ -11,6 +11,8 @@ class TransportAssetBase(BaseModel):
     fuel_status: float = 100.0
     driver_name: Optional[str] = None
     personnel_count: Optional[int] = 0
+    number_plate: Optional[str] = None
+    past_movements: Optional[str] = "[]"
 
 class TransportAssetCreate(TransportAssetBase):
     """Schema for creating a new asset (client input)"""

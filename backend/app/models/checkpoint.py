@@ -14,3 +14,6 @@ class Checkpoint(Base):
     lat = Column(Float, nullable=False)
     long = Column(Float, nullable=False)
     checkpoint_type = Column(String, default="TCP", doc="TCP, Toll, Police Post, Rest Stop")
+    capacity = Column(Integer, default=50, doc="Max vehicle holding capacity")
+    tcp_incharge = Column(String, nullable=True, doc="Name/Rank of Officer In-charge")
+    scheduled_departures = Column(String, default="[]", doc="JSON list of standard departure times")

@@ -3,6 +3,9 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 interface Asset {
   id: number;
@@ -12,6 +15,7 @@ interface Asset {
   current_long?: number;
   bearing?: number;
   is_available: boolean;
+  convoy_id?: number | null;
 }
 
 interface Route {
@@ -27,7 +31,12 @@ interface Checkpoint {
   name: string;
   lat: number;
   long: number;
+  appointment_type?: string; // Legacy field match
   checkpoint_type: string;
+  location_name?: string;
+  capacity?: number;
+  tcp_incharge?: string;
+  upcoming_convoys?: any[];
 }
 
 interface MapProps {
@@ -45,9 +54,11 @@ interface MapProps {
 
 export default function MapComponent({ assets, routes = [], checkpoints = [], draftRoute, onRoutePointUpdate }: MapProps) {
   const mapRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<L.Layer[]>([]); // Store asset/route layers
+  const markersRef = useRef<L.Layer[]>([]); // Store non-clustered layers (routes, draft markers)
+  const clusterGroupRef = useRef<L.MarkerClusterGroup | null>(null);
   const checkpointMarkersRef = useRef<L.Layer[]>([]); // Store TCP layers separate to toggle
   const containerRef = useRef<HTMLDivElement>(null);
+  const prevStaticAssetsJson = useRef<string>('[]'); // For deep comparison of static assets
 
   // Initialize map once
   useEffect(() => {
@@ -84,6 +95,29 @@ export default function MapComponent({ assets, routes = [], checkpoints = [], dr
 
     mapRef.current = map;
 
+    // Initialize Cluster Group
+    const clusterGroup = L.markerClusterGroup({
+      maxClusterRadius: 0.5,
+      iconCreateFunction: function (cluster) {
+        const childCount = cluster.getChildCount();
+        let c = ' marker-cluster-';
+        if (childCount < 10) {
+          c += 'small';
+        } else if (childCount < 100) {
+          c += 'medium';
+        } else {
+          c += 'large';
+        }
+        return new L.DivIcon({
+          html: '<div><span>' + childCount + '</span></div>',
+          className: 'marker-cluster' + c,
+          iconSize: new L.Point(30, 30)
+        });
+      }
+    });
+    map.addLayer(clusterGroup);
+    clusterGroupRef.current = clusterGroup;
+
     // Zoom Listener for TCP Visibility
     map.on('zoomend', () => {
       const zoom = map.getZoom();
@@ -110,11 +144,17 @@ export default function MapComponent({ assets, routes = [], checkpoints = [], dr
     const map = mapRef.current;
     if (!map) return;
 
+    // 1. Separate Assets: Clustered (Available/Static) vs Non-Clustered (In Convoy/Busy)
+    const staticAssets = assets.filter(a => !a.convoy_id);
+    const movingAssets = assets.filter(a => a.convoy_id);
+
     // Remove old layers
     markersRef.current.forEach(layer => layer.remove());
     markersRef.current = [];
     checkpointMarkersRef.current.forEach(layer => layer.remove());
     checkpointMarkersRef.current = [];
+
+
 
     // --- RENDER CHECKPOINTS (TCPs) ---
     // Create markers but only add to map if zoom level is sufficient
@@ -133,30 +173,41 @@ export default function MapComponent({ assets, routes = [], checkpoints = [], dr
             display: flex; 
             align-items: center; 
             justify-content: center;
-            font-weight: bold;
-            font-size: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
           ">
-            TCP
+            TC
           </div>
-        `;
+      `;
+
       const icon = L.divIcon({
         html: iconHtml,
-        className: 'tcp-icon',
-        iconSize: [24, 24]
+        className: 'custom-tcp-icon',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
       });
 
       const marker = L.marker([tcp.lat, tcp.long], { icon });
+
+      // Only add to map if zoom is sufficient
+      if (showTCPsInitial) {
+        marker.addTo(map);
+      }
+      checkpointMarkersRef.current.push(marker);
+
       marker.bindPopup(`
             <div style="font-family: system-ui; min-width: 150px; background: #0f172a; color: white; border: 1px solid #334155; padding: 10px; border-radius: 6px;">
                 <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #ef4444;">${tcp.name}</div>
                 <div style="color: #94a3b8; font-size: 11px;">${tcp.location_name || ''}</div>
-                <div style="font-size: 10px; color: #64748b; margin-top:5px;">Type: ${tcp.checkpoint_type}</div>
+                <div style="font-size: 10px; color: #cbd5e1; margin-top:5px; border-top: 1px solid #334155; padding-top: 5px;">
+                   <div>📋 Type: <b>${tcp.checkpoint_type}</b></div>
+                   <div>👮 In-Charge: <b>${tcp.tcp_incharge || 'N/A'}</b></div>
+                   <div>🏗️ Capacity: <b>${tcp.capacity} veh</b></div>
+                   ${tcp.upcoming_convoys && tcp.upcoming_convoys.length > 0 ?
+          `<div style="margin-top:5px; color:#fbbf24;">⚠️ Upcoming: ${tcp.upcoming_convoys.length} Convoy(s)</div>` :
+          `<div style="margin-top:5px; color:#10b981;">✅ No Traffic/Convoys</div>`
+        }
+                </div>
             </div>
         `);
-
-      if (showTCPsInitial) marker.addTo(map);
-      checkpointMarkersRef.current.push(marker);
     });
 
     // --- RENDER ROUTES ---
@@ -198,15 +249,49 @@ export default function MapComponent({ assets, routes = [], checkpoints = [], dr
       markersRef.current.push(polyline);
     });
 
-    // --- RENDER ASSETS ---
-    assets.forEach(asset => {
+    // --- RENDER MOVING ASSETS (NO CLUSTER) ---
+    movingAssets.forEach(asset => {
       if (asset.current_lat && asset.current_long) {
-
-        // Create rotatable icon
         const color = asset.is_available ? '#10b981' : '#f59e0b';
         const bearing = asset.bearing || 0;
-
         const iconHtml = `
+              <div style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; transform: rotate(${bearing}deg); transition: transform 0.3s ease-out;">
+                <div style="width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 16px solid ${color}; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));"></div>
+                <div style="position: absolute; width: 4px; height: 4px; background: white; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+              </div>
+            `;
+        const icon = L.divIcon({ html: iconHtml, className: 'custom-vehicle-icon', iconSize: [24, 24], iconAnchor: [12, 12] });
+        const marker = L.marker([asset.current_lat, asset.current_long], { icon }).addTo(map);
+
+        const popupContent = `
+              <div style="font-family: system-ui; min-width: 150px; background: #0f172a; color: white; border: 1px solid #334155; padding: 10px; border-radius: 6px;">
+                <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">${asset.name}</div>
+                <div style="color: #94a3b8; font-size: 11px;">${asset.asset_type}</div>
+                <div style="font-size: 10px; color: #64748b;">Heading: ${Math.round(bearing)}°</div>
+                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #334155;">
+                  <span style="color: ${asset.is_available ? '#10b981' : '#f59e0b'}; font-weight: bold; font-size: 12px;">${asset.is_available ? '● Available' : '● Busy'}</span>
+                </div>
+              </div>
+            `;
+        marker.bindPopup(popupContent);
+        markersRef.current.push(marker);
+      }
+    });
+
+    // --- RENDER STATIC ASSETS (CLUSTERED) ---
+    const currentStaticJson = JSON.stringify(staticAssets.map(a => ({ id: a.id, lat: a.current_lat, long: a.current_long, status: a.is_available })));
+    if (currentStaticJson !== prevStaticAssetsJson.current) {
+      prevStaticAssetsJson.current = currentStaticJson;
+      if (clusterGroupRef.current) {
+        clusterGroupRef.current.clearLayers();
+        staticAssets.forEach(asset => {
+          if (asset.current_lat && asset.current_long) {
+
+            // Create rotatable icon
+            const color = asset.is_available ? '#10b981' : '#f59e0b';
+            const bearing = asset.bearing || 0;
+
+            const iconHtml = `
           <div style="
             width: 24px; 
             height: 24px; 
@@ -240,18 +325,18 @@ export default function MapComponent({ assets, routes = [], checkpoints = [], dr
           </div>
         `;
 
-        const icon = L.divIcon({
-          html: iconHtml,
-          className: 'custom-vehicle-icon',
-          iconSize: [24, 24],
-          iconAnchor: [12, 12]
-        });
+            const icon = L.divIcon({
+              html: iconHtml,
+              className: 'custom-vehicle-icon',
+              iconSize: [24, 24],
+              iconAnchor: [12, 12]
+            });
 
-        const marker = L.marker([asset.current_lat, asset.current_long], {
-          icon: icon
-        }).addTo(map);
+            const marker = L.marker([asset.current_lat, asset.current_long], {
+              icon: icon
+            }); // Do NOT add to map directly
 
-        const popupContent = `
+            const popupContent = `
           <div style="font-family: system-ui; min-width: 150px; background: #0f172a; color: white; border: 1px solid #334155; padding: 10px; border-radius: 6px;">
             <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">${asset.name}</div>
             <div style="color: #94a3b8; font-size: 11px;">${asset.asset_type}</div>
@@ -264,10 +349,16 @@ export default function MapComponent({ assets, routes = [], checkpoints = [], dr
           </div>
         `;
 
-        marker.bindPopup(popupContent);
-        markersRef.current.push(marker);
+            marker.bindPopup(popupContent);
+
+            // Add to Cluster Group
+            if (clusterGroupRef.current) {
+              clusterGroupRef.current.addLayer(marker);
+            }
+          }
+        });
       }
-    });
+    }
 
 
 
@@ -285,7 +376,8 @@ export default function MapComponent({ assets, routes = [], checkpoints = [], dr
         }).addTo(map);
 
         startMarker.on('dragend', (e) => {
-          const ll = e.target.getLatLng();
+          const marker = e.target as L.Marker;
+          const ll = marker.getLatLng();
           onRoutePointUpdate('start', Number(ll.lat.toFixed(6)), Number(ll.lng.toFixed(6)));
         });
         markersRef.current.push(startMarker);
@@ -303,20 +395,14 @@ export default function MapComponent({ assets, routes = [], checkpoints = [], dr
         }).addTo(map);
 
         endMarker.on('dragend', (e) => {
-          const ll = e.target.getLatLng();
+          const marker = e.target as L.Marker;
+          const ll = marker.getLatLng();
           onRoutePointUpdate('end', Number(ll.lat.toFixed(6)), Number(ll.lng.toFixed(6)));
         });
         markersRef.current.push(endMarker);
       }
 
-      // Map Click to Set Points (if missing)
-      map.on('click', (e: L.LeafletMouseEvent) => {
-        if (draftRoute.start_lat === 0) {
-          onRoutePointUpdate('start', Number(e.latlng.lat.toFixed(6)), Number(e.latlng.lng.toFixed(6)));
-        } else if (draftRoute.end_lat === 0) {
-          onRoutePointUpdate('end', Number(e.latlng.lat.toFixed(6)), Number(e.latlng.lng.toFixed(6)));
-        }
-      });
+
     }
 
 

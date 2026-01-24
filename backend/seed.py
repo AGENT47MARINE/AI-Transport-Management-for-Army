@@ -128,44 +128,44 @@ async def seed_data():
         from app.models.checkpoint import Checkpoint
         checkpoints = [
             # --- J&K: JAMMU-SRINAGAR HIGHWAY (NH-44) ---
-            Checkpoint(name="TCP-1 Nagrota", location_name="Nagrota Toll", lat=32.7797, long=74.9048, checkpoint_type="Toll Gate"),
-            Checkpoint(name="TCP-2 Udhampur", location_name="Jakhani Chowk", lat=32.9265, long=75.1360, checkpoint_type="TCP"),
-            Checkpoint(name="TCP-3 Chenani", location_name="Chenani-Nashri South", lat=33.0286, long=75.2917, checkpoint_type="Tunnel Control"),
-            Checkpoint(name="TCP-4 Nashri", location_name="Chenani-Nashri North", lat=33.1276, long=75.3013, checkpoint_type="Tunnel Control"),
-            Checkpoint(name="TCP-5 Ramban", location_name="Chanderkote", lat=33.2093, long=75.2926, checkpoint_type="Police Post"),
-            Checkpoint(name="TCP-6 Banihal", location_name="Banihal Tunnel South", lat=33.4795, long=75.2017, checkpoint_type="TCP"),
-            Checkpoint(name="TCP-7 Qazigund", location_name="Navyug Tunnel North", lat=33.5852, long=75.1768, checkpoint_type="Toll Gate"),
-            Checkpoint(name="TCP-8 Vessu", location_name="Vessu Mir Bazar", lat=33.6631, long=75.1463, checkpoint_type="Army TCP"),
-            Checkpoint(name="TCP-9 Awantipora", location_name="Victor Force HQ", lat=33.9242, long=75.0173, checkpoint_type="Military Base"),
-            Checkpoint(name="TCP-10 Pantha Chowk", location_name="Srinagar Entry", lat=34.0456, long=74.8631, checkpoint_type="Police Post"),
+            Checkpoint(name="TCP-1 Nagrota", location_name="Nagrota Toll", lat=32.7797, long=74.9048, checkpoint_type="Toll Gate", capacity=200, tcp_incharge="Insp. Rajesh Kumar", scheduled_departures='["0800", "1400", "2000"]'),
+            Checkpoint(name="TCP-2 Udhampur", location_name="Jakhani Chowk", lat=32.9265, long=75.1360, checkpoint_type="TCP", capacity=150, tcp_incharge="Sub. Major Singh", scheduled_departures='["0600", "1200", "1800"]'),
+            Checkpoint(name="TCP-3 Chenani", location_name="Chenani-Nashri South", lat=33.0286, long=75.2917, checkpoint_type="Tunnel Control", capacity=50, tcp_incharge="Capt. Sharma", scheduled_departures='[]'),
+            Checkpoint(name="TCP-4 Nashri", location_name="Chenani-Nashri North", lat=33.1276, long=75.3013, checkpoint_type="Tunnel Control", capacity=50, tcp_incharge="Capt. Verma", scheduled_departures='[]'),
+            Checkpoint(name="TCP-5 Ramban", location_name="Chanderkote", lat=33.2093, long=75.2926, checkpoint_type="Police Post", capacity=80, tcp_incharge="ASI Khan", scheduled_departures='["0700", "1900"]'),
+            Checkpoint(name="TCP-6 Banihal", location_name="Banihal Tunnel South", lat=33.4795, long=75.2017, checkpoint_type="TCP", capacity=120, tcp_incharge="Maj. Dhillon", scheduled_departures='["0500", "1100", "1700"]'),
+            Checkpoint(name="TCP-7 Qazigund", location_name="Navyug Tunnel North", lat=33.5852, long=75.1768, checkpoint_type="Toll Gate", capacity=180, tcp_incharge="Insp. Farooq", scheduled_departures='["0600", "1400", "2200"]'),
+            Checkpoint(name="TCP-8 Vessu", location_name="Vessu Mir Bazar", lat=33.6631, long=75.1463, checkpoint_type="Army TCP", capacity=300, tcp_incharge="Col. Rathore", scheduled_departures='["0600", "0900", "1500"]'),
+            Checkpoint(name="TCP-9 Awantipora", location_name="Victor Force HQ", lat=33.9242, long=75.0173, checkpoint_type="Military Base", capacity=500, tcp_incharge="Brig. Mehta", scheduled_departures='["0800", "1600"]'),
+            Checkpoint(name="TCP-10 Pantha Chowk", location_name="Srinagar Entry", lat=34.0456, long=74.8631, checkpoint_type="Police Post", capacity=100, tcp_incharge="DSP Wani", scheduled_departures='["0700", "1300", "1900"]'),
 
             # --- J&K: MUGHAL ROAD (Alternative) ---
-            Checkpoint(name="TCP-11 Bafliaz", location_name="Poonch Entry", lat=33.6167, long=74.3500, checkpoint_type="TCP"),
-            Checkpoint(name="TCP-12 Pir Ki Gali", location_name="Mughal Road Summit", lat=33.6333, long=74.5667, checkpoint_type="Pass Control"),
-            Checkpoint(name="TCP-13 Shopian", location_name="Heerpora", lat=33.7000, long=74.8000, checkpoint_type="Police Post"),
+            Checkpoint(name="TCP-11 Bafliaz", location_name="Poonch Entry", lat=33.6167, long=74.3500, checkpoint_type="TCP", capacity=60, tcp_incharge="ASI Lal", scheduled_departures='["0900", "1500"]'),
+            Checkpoint(name="TCP-12 Pir Ki Gali", location_name="Mughal Road Summit", lat=33.6333, long=74.5667, checkpoint_type="Pass Control", capacity=30, tcp_incharge="Hav. Gurung", scheduled_departures='["1000", "1400"]'),
+            Checkpoint(name="TCP-13 Shopian", location_name="Heerpora", lat=33.7000, long=74.8000, checkpoint_type="Police Post", capacity=80, tcp_incharge="SI Bhat", scheduled_departures='["0800", "1600"]'),
 
             # --- LADAKH: SRINAGAR-LEH HIGHWAY (NH-1) ---
-            Checkpoint(name="TCP-14 Sonamarg", location_name="Sonamarg Market", lat=34.3000, long=75.2833, checkpoint_type="TCP"),
-            Checkpoint(name="TCP-15 Zojila", location_name="Zojila Pass Base", lat=34.2833, long=75.4833, checkpoint_type="Pass Control"),
-            Checkpoint(name="TCP-16 Drass", location_name="Kargil War Memorial", lat=34.4333, long=75.7667, checkpoint_type="Military Checkpoint"),
-            Checkpoint(name="TCP-17 Kargil", location_name="Kargil Town", lat=34.5500, long=76.1333, checkpoint_type="Police Post"),
-            Checkpoint(name="TCP-18 Khaltsi", location_name="Indus Bridge", lat=34.3333, long=76.8833, checkpoint_type="Bridge Security"),
-            Checkpoint(name="TCP-19 Leh", location_name="Leh Gate", lat=34.1500, long=77.5667, checkpoint_type="TCP"),
+            Checkpoint(name="TCP-14 Sonamarg", location_name="Sonamarg Market", lat=34.3000, long=75.2833, checkpoint_type="TCP", capacity=150, tcp_incharge="Maj. Kulkarni", scheduled_departures='["0500", "1300"]'),
+            Checkpoint(name="TCP-15 Zojila", location_name="Zojila Pass Base", lat=34.2833, long=75.4833, checkpoint_type="Pass Control", capacity=40, tcp_incharge="Capt. Dorje", scheduled_departures='["0400", "1200"]'),
+            Checkpoint(name="TCP-16 Drass", location_name="Kargil War Memorial", lat=34.4333, long=75.7667, checkpoint_type="Military Checkpoint", capacity=200, tcp_incharge="Lt. Col. Yadav", scheduled_departures='["0600", "1400"]'),
+            Checkpoint(name="TCP-17 Kargil", location_name="Kargil Town", lat=34.5500, long=76.1333, checkpoint_type="Police Post", capacity=100, tcp_incharge="Insp. Tashi", scheduled_departures='["0700", "1500"]'),
+            Checkpoint(name="TCP-18 Khaltsi", location_name="Indus Bridge", lat=34.3333, long=76.8833, checkpoint_type="Bridge Security", capacity=50, tcp_incharge="Sub. Angchuk", scheduled_departures='[]'),
+            Checkpoint(name="TCP-19 Leh", location_name="Leh Gate", lat=34.1500, long=77.5667, checkpoint_type="TCP", capacity=250, tcp_incharge="DSP Stanzin", scheduled_departures='["0600", "1000", "1600"]'),
 
             # --- LADAKH: LEH-MANALI HIGHWAY ---
-            Checkpoint(name="TCP-20 Upshi", location_name="Manali Junction", lat=33.8333, long=77.8167, checkpoint_type="Police Post"),
-            Checkpoint(name="TCP-21 Pang", location_name="Army Camp", lat=33.1500, long=77.8000, checkpoint_type="Military Camp"),
-            Checkpoint(name="TCP-22 Sarchu", location_name="HP-Ladakh Border", lat=32.9167, long=77.5833, checkpoint_type="Border Checkpost"),
+            Checkpoint(name="TCP-20 Upshi", location_name="Manali Junction", lat=33.8333, long=77.8167, checkpoint_type="Police Post", capacity=80, tcp_incharge="SI Rigzin", scheduled_departures='["0800", "1400"]'),
+            Checkpoint(name="TCP-21 Pang", location_name="Army Camp", lat=33.1500, long=77.8000, checkpoint_type="Military Camp", capacity=300, tcp_incharge="Maj. Redwood", scheduled_departures='["0600", "1200"]'),
+            Checkpoint(name="TCP-22 Sarchu", location_name="HP-Ladakh Border", lat=32.9167, long=77.5833, checkpoint_type="Border Checkpost", capacity=100, tcp_incharge="Insp. Negi", scheduled_departures='["0700", "1500"]'),
 
             # --- HIMACHAL PRADESH ---
-            Checkpoint(name="TCP-23 Keylong", location_name="Lahaul HQ", lat=32.5667, long=77.0333, checkpoint_type="Police Post"),
-            Checkpoint(name="TCP-24 Manali", location_name="Solang Valley", lat=32.2396, long=77.1887, checkpoint_type="Toll Gate"),
-            Checkpoint(name="TCP-25 Mandi", location_name="Mandi Town", lat=31.7000, long=76.9333, checkpoint_type="TCP"),
-            Checkpoint(name="TCP-26 Pathankot", location_name="Punjab-HP Border", lat=32.2643, long=75.6527, checkpoint_type="Border Checkpost"),
+            Checkpoint(name="TCP-23 Keylong", location_name="Lahaul HQ", lat=32.5667, long=77.0333, checkpoint_type="Police Post", capacity=90, tcp_incharge="ASI Thakur", scheduled_departures='["0800", "1600"]'),
+            Checkpoint(name="TCP-24 Manali", location_name="Solang Valley", lat=32.2396, long=77.1887, checkpoint_type="Toll Gate", capacity=200, tcp_incharge="Insp. Sharma", scheduled_departures='["0600", "1400", "2000"]'),
+            Checkpoint(name="TCP-25 Mandi", location_name="Mandi Town", lat=31.7000, long=76.9333, checkpoint_type="TCP", capacity=120, tcp_incharge="SI Verma", scheduled_departures='["0700", "1500"]'),
+            Checkpoint(name="TCP-26 Pathankot", location_name="Punjab-HP Border", lat=32.2643, long=75.6527, checkpoint_type="Border Checkpost", capacity=250, tcp_incharge="Insp. Singh", scheduled_departures='["0600", "1200", "1800"]'),
 
             # --- PUNJAB/JAMMU BORDER ---
-            Checkpoint(name="TCP-27 Lakhanpur", location_name="J&K-Punjab Border", lat=32.3667, long=75.6167, checkpoint_type="Toll Plaza/Excise"),
-            Checkpoint(name="TCP-28 Samba", location_name="Samba Chowk", lat=32.5500, long=75.1167, checkpoint_type="Police Post"),
+            Checkpoint(name="TCP-27 Lakhanpur", location_name="J&K-Punjab Border", lat=32.3667, long=75.6167, checkpoint_type="Toll Plaza/Excise", capacity=500, tcp_incharge="ETO Gupta", scheduled_departures='["0000", "0600", "1200", "1800"]'),
+            Checkpoint(name="TCP-28 Samba", location_name="Samba Chowk", lat=32.5500, long=75.1167, checkpoint_type="Police Post", capacity=100, tcp_incharge="SI Balwinder", scheduled_departures='["0800", "1600"]'),
         ]
         db.add_all(checkpoints)
         print(f"Added {len(checkpoints)} Traffic Control Checkpoints.")

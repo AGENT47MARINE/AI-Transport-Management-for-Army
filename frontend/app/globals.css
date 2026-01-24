@@ -83,3 +83,47 @@ body {
   background: rgba(0, 0, 0, 0.9) !important;
   border-color: rgba(234, 179, 8, 0.5) !important;
 }
+
+/* Marker Cluster Custom Styles */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background-color: rgba(15, 23, 42, 0.6);
+  /* Slate-900 transparent */
+  border-radius: 50%;
+}
+
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  width: 20px;
+  height: 20px;
+  margin-left: 5px;
+  margin-top: 5px;
+  text-align: center;
+  border-radius: 50%;
+  font-family: inherit;
+  font-weight: bold;
+  font-size: 10px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.marker-cluster-small div {
+  background-color: rgba(16, 185, 129, 0.8);
+  /* Green-500 */
+}
+
+.marker-cluster-medium div {
+  background-color: rgba(245, 158, 11, 0.8);
+  /* Amber-500 */
+}
+
+.marker-cluster-large div {
+  background-color: rgba(239, 68, 68, 0.8);
+  /* Red-500 */
+}

@@ -63,3 +63,25 @@ async def plan_route(plan: RoutePlanRequest, db: AsyncSession = Depends(get_db))
     await db.commit()
     await db.refresh(new_route)
     return new_route
+
+@router.post("/estimate")
+async def estimate_route_metrics(plan: RoutePlanRequest):
+    """
+    Get estimated distance and time for a route without creating it.
+    """
+    from app.services.routing import get_route_metrics_with_path
+    
+    start = [plan.start_lat, plan.start_long]
+    end = [plan.end_lat, plan.end_long]
+    
+    metrics = await get_route_metrics_with_path(start, end)
+    
+    if not metrics:
+        # Fallback
+        return {
+            "distance_km": 0.0, 
+            "duration_hours": 0.0, 
+            "waypoints": [start, end]
+        }
+    
+    return metrics

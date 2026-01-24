@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Truck, MapPin, X, Save, Navigation } from 'lucide-react';
 
 interface DashboardOverlayProps {
@@ -49,20 +49,44 @@ export default function DashboardOverlay({ routeForm, setRouteForm }: DashboardO
         }
     }, [activeModal]);
 
-    const handleSearchLocation = async (query: string, type: 'start' | 'end') => {
-        if (!query || query.length < 3) return;
+    const isStartSelection = useRef(false);
+    const isEndSelection = useRef(false);
+
+    const handleSearchLocation = async (query: string, type: 'start' | 'end' | 'asset') => {
+        if (!query || query.length < 3) {
+            if (type === 'end') setSearchResults([]);
+            else setStartSearchResults([]);
+            return;
+        }
         setIsSearching(true);
         try {
             const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`);
             const data = await res.json();
-            if (type === 'start') setStartSearchResults(data);
-            else setSearchResults(data);
+            if (type === 'end') setSearchResults(data);
+            else setStartSearchResults(data);
         } catch (e) {
             console.error(e);
         } finally {
             setIsSearching(false);
         }
     };
+
+    // Debounced Search Effects
+    useEffect(() => {
+        if (isStartSelection.current) return;
+        const timer = setTimeout(() => {
+            handleSearchLocation(convoyForm.start_location, 'start');
+        }, 800);
+        return () => clearTimeout(timer);
+    }, [convoyForm.start_location]);
+
+    useEffect(() => {
+        if (isEndSelection.current) return;
+        const timer = setTimeout(() => {
+            handleSearchLocation(convoyForm.end_location, 'end');
+        }, 800);
+        return () => clearTimeout(timer);
+    }, [convoyForm.end_location]);
 
     const toggleAssetSelection = (id: number) => {
         const current = convoyForm.asset_ids;
@@ -86,6 +110,40 @@ export default function DashboardOverlay({ routeForm, setRouteForm }: DashboardO
     // Use props if available, else local
     const activeRouteForm = routeForm || localRouteFormState[0];
     const setActiveRouteForm = setRouteForm || localRouteFormState[1];
+
+    const [estimatedMetrics, setEstimatedMetrics] = useState<{ distance_km: number, duration_hours: number } | null>(null);
+
+    // Auto-fetch estimation when start/end changes
+    useEffect(() => {
+        if (convoyForm.start_lat !== 0 && convoyForm.end_lat !== 0) {
+            setEstimatedMetrics(null); // Reset while loading
+            const fetchEstimate = async () => {
+                try {
+                    const res = await fetch('http://localhost:8000/api/v1/routes/estimate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name: 'Estimate',
+                            start_lat: convoyForm.start_lat,
+                            start_long: convoyForm.start_long,
+                            end_lat: convoyForm.end_lat,
+                            end_long: convoyForm.end_long
+                        })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        setEstimatedMetrics(data);
+                    }
+                } catch (e) {
+                    console.error("Estimate fetch failed", e);
+                }
+            };
+
+            // Debounce slightly to avoid rapid calls
+            const timer = setTimeout(fetchEstimate, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [convoyForm.start_lat, convoyForm.start_long, convoyForm.end_lat, convoyForm.end_long]);
 
     const handleCreateAsset = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -328,12 +386,7 @@ export default function DashboardOverlay({ routeForm, setRouteForm }: DashboardO
                                         />
                                         <button
                                             type="button"
-                                            onClick={async () => {
-                                                if (!assetForm.search_query || assetForm.search_query.length < 3) return;
-                                                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${assetForm.search_query}`);
-                                                const data = await res.json();
-                                                setStartSearchResults(data); // Reusing startSearchResults for asset search to save state
-                                            }}
+                                            onClick={() => handleSearchLocation(assetForm.search_query, 'asset')}
                                             style={{ padding: '0 15px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
                                         >
                                             Search
@@ -401,17 +454,13 @@ export default function DashboardOverlay({ routeForm, setRouteForm }: DashboardO
                                         <input
                                             type="text"
                                             value={convoyForm.start_location}
-                                            onChange={e => setConvoyForm({ ...convoyForm, start_location: e.target.value })}
+                                            onChange={e => {
+                                                isStartSelection.current = false;
+                                                setConvoyForm({ ...convoyForm, start_location: e.target.value });
+                                            }}
                                             placeholder="Start City..."
                                             style={{ flex: 1, padding: '10px', background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: 'white' }}
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={() => handleSearchLocation(convoyForm.start_location, 'start')}
-                                            style={{ padding: '0 15px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
-                                        >
-                                            Search
-                                        </button>
                                     </div>
                                     {/* Start Results */}
                                     {startSearchResults.length > 0 && (
@@ -420,6 +469,7 @@ export default function DashboardOverlay({ routeForm, setRouteForm }: DashboardO
                                                 <div
                                                     key={idx}
                                                     onClick={() => {
+                                                        isStartSelection.current = true;
                                                         setConvoyForm({
                                                             ...convoyForm,
                                                             start_location: res.display_name.split(',')[0],
@@ -450,17 +500,13 @@ export default function DashboardOverlay({ routeForm, setRouteForm }: DashboardO
                                         <input
                                             type="text"
                                             value={convoyForm.end_location}
-                                            onChange={e => setConvoyForm({ ...convoyForm, end_location: e.target.value })}
+                                            onChange={e => {
+                                                isEndSelection.current = false;
+                                                setConvoyForm({ ...convoyForm, end_location: e.target.value });
+                                            }}
                                             placeholder="End City..."
                                             style={{ flex: 1, padding: '10px', background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: 'white' }}
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={() => handleSearchLocation(convoyForm.end_location, 'end')}
-                                            style={{ padding: '0 15px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
-                                        >
-                                            Search
-                                        </button>
                                     </div>
 
                                     {/* End Results */}
@@ -470,6 +516,7 @@ export default function DashboardOverlay({ routeForm, setRouteForm }: DashboardO
                                                 <div
                                                     key={idx}
                                                     onClick={() => {
+                                                        isEndSelection.current = true;
                                                         setConvoyForm({
                                                             ...convoyForm,
                                                             end_location: res.display_name.split(',')[0],
@@ -493,10 +540,40 @@ export default function DashboardOverlay({ routeForm, setRouteForm }: DashboardO
                                     )}
                                 </div>
 
+                                {/* ESTIMATED METRICS SECTION */}
+                                {convoyForm.start_lat !== 0 && convoyForm.end_lat !== 0 && (
+                                    <div style={{
+                                        background: 'rgba(16, 185, 129, 0.1)',
+                                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                                        borderRadius: '6px',
+                                        padding: '10px',
+                                        marginTop: '5px'
+                                    }}>
+                                        <div style={{ fontWeight: 'bold', color: '#10b981', fontSize: '12px', marginBottom: '4px' }}>
+                                            Route Estimation
+                                        </div>
+                                        {estimatedMetrics ? (
+                                            <div style={{ display: 'flex', gap: '15px', fontSize: '12px', color: '#e2e8f0' }}>
+                                                <span>📏 <b>{estimatedMetrics.distance_km} km</b></span>
+                                                <span>⏱️ <b>{estimatedMetrics.duration_hours} hrs</b></span>
+                                            </div>
+                                        ) : (
+                                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>Calculating route metrics...</div>
+                                        )}
+                                    </div>
+                                )}
+
                                 {/* Asset Allocation with Scroll */}
-                                <div style={{ flex: 1, minHeight: '150px', display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginTop: '10px' }}>
                                     <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '5px' }}>Allocate Available Assets ({convoyForm.asset_ids.length} selected)</label>
-                                    <div style={{ flex: 1, overflowY: 'auto', border: '1px solid #334155', borderRadius: '6px', padding: '8px', background: '#020617' }}>
+                                    <div style={{
+                                        maxHeight: '200px', // Fixed height to force scroll
+                                        overflowY: 'auto',
+                                        border: '1px solid #334155',
+                                        borderRadius: '6px',
+                                        padding: '8px',
+                                        background: '#020617'
+                                    }}>
                                         {assets.length === 0 ? <div style={{ color: '#64748b', fontSize: '12px' }}>No assets found</div> : null}
                                         {assets.map(asset => (
                                             <div

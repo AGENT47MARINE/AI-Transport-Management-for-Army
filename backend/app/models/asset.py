@@ -24,6 +24,9 @@ class TransportAsset(Base):
     
     driver_name = Column(String, nullable=True, doc="Name of the driver")
     personnel_count = Column(Integer, default=0, doc="Number of personnel on board")
+    
+    number_plate = Column(String, unique=True, nullable=True, doc="Vehicle Registration Number")
+    past_movements = Column(String, default="[]", doc="JSON list of past locations")
 
     convoy_id = Column(Integer, ForeignKey("convoys.id"), nullable=True)
     convoy = relationship("Convoy", back_populates="assets")
