@@ -111,7 +111,7 @@ export default function MapComponent({ assets, routes = [], checkpoints = [], dr
         return new L.DivIcon({
           html: '<div><span>' + childCount + '</span></div>',
           className: 'marker-cluster' + c,
-          iconSize: new L.Point(30, 30)
+          iconSize: new L.Point(20, 20)
         });
       }
     });
