@@ -52,96 +52,99 @@ async def simulate():
     while True:
         try:
             async with SessionLocal() as db:
-                # 1. Fetch LATEST Route (User created or Seeded)
-                route_res = await db.execute(select(Route).order_by(Route.id.desc()).limit(1))
-                route = route_res.scalars().first()
+                # 1. Fetch Active Convoys (IN_TRANSIT) with their Assets and Routes
+                # We use selectinload to eagerly fetch relationships async
+                from sqlalchemy.orm import selectinload
+                from app.models.convoy import Convoy
                 
-                assets_res = await db.execute(select(TransportAsset))
-                assets = assets_res.scalars().all()
+                query = (
+                    select(Convoy)
+                    .where(Convoy.status == "IN_TRANSIT")
+                    .options(selectinload(Convoy.assets), selectinload(Convoy.route))
+                )
+                
+                convoys_res = await db.execute(query)
+                active_convoys = convoys_res.scalars().all()
 
-                if not route or not route.waypoints:
-                    # print("Waiting for route data...")
-                    await asyncio.sleep(5)
+                if not active_convoys:
+                    # print("No active convoys in transit...")
+                    await asyncio.sleep(2)
                     continue
 
-                waypoints = route.waypoints
-                
-                for asset in assets:
-                    state = asset_states.get(asset.id)
-                    if not state:
-                        state = { 'current_index': 0, 'progress_km': 0.0, 'speed_kmh': 0.0, 'last_bearing': 0.0 }
-                        asset_states[asset.id] = state
+                for convoy in active_convoys:
+                    if not convoy.route or not convoy.route.waypoints:
+                        continue
+                        
+                    waypoints = convoy.route.waypoints
+                    
+                    # Move all assets in this convoy
+                    for asset in convoy.assets:
+                        state = asset_states.get(asset.id)
+                        if not state:
+                            state = { 'current_index': 0, 'progress_km': 0.0, 'speed_kmh': 0.0, 'last_bearing': 0.0 }
+                            asset_states[asset.id] = state
 
-                    # Calculate max distance to move this tick
-                    dist_remaining_km = state['speed_kmh'] * (UPDATE_INTERVAL_SEC / 3600.0)
-                    
-                    safety_loop_count = 0
-                    
-                    # Move along waypoints consuming distance
-                    while dist_remaining_km > 0:
-                        safety_loop_count += 1
-                        if safety_loop_count > 100:
-                            print(f"WARNING: Infinite loop detected for asset {asset.id}. Forced break.")
-                            break
+                        # Calculate max distance to move this tick
+                        # If speed is 0, give it a kickstart speed
+                        if state['speed_kmh'] < 1.0:
+                             state['speed_kmh'] = BASE_SPEED_KMH
+
+                        dist_remaining_km = state['speed_kmh'] * (UPDATE_INTERVAL_SEC / 3600.0)
+                        
+                        safety_loop_count = 0
+                        
+                        # Move along waypoints consuming distance
+                        while dist_remaining_km > 0:
+                            safety_loop_count += 1
+                            if safety_loop_count > 100:
+                                break
+                                
+                            idx = state['current_index']
                             
-                        idx = state['current_index']
-                        
-                        # Handle Loop
-                        if idx >= len(waypoints) - 1:
-                            state['current_index'] = 0
-                            state['progress_km'] = 0.0
-                            idx = 0
-                        
-                        curr_pt = waypoints[idx]
-                        next_pt = waypoints[idx + 1]
-                        
-                        seg_dist_km = haversine_distance(curr_pt[0], curr_pt[1], next_pt[0], next_pt[1])
-                        
-                        if seg_dist_km < 0.0001: # 10 cm safety
-                            state['current_index'] += 1
-                            state['progress_km'] = 0.0
-                            continue
-                        
-                        # Calculate physics for this segment (Speed/Bearing)
-                        bearing = calculate_bearing(curr_pt[0], curr_pt[1], next_pt[0], next_pt[1])
-                        
-                        # Prevent negative distance
-                        dist_on_seg_km = max(0.0, seg_dist_km - state['progress_km'])
-                        
-                        if dist_remaining_km >= dist_on_seg_km:
-                            # Finish segment
-                            dist_remaining_km -= dist_on_seg_km
-                            state['current_index'] += 1
-                            state['progress_km'] = 0.0
-                        else:
-                            # End in segment
-                            state['progress_km'] += dist_remaining_km
-                            dist_remaining_km = 0 
+                            # Handle Loop or Stop at End
+                            if idx >= len(waypoints) - 1:
+                                # Stop at end for now, or loop
+                                state['current_index'] = 0
+                                state['progress_km'] = 0.0
+                                idx = 0
                             
-                            frac = state['progress_km'] / seg_dist_km
-                            asset.current_lat = curr_pt[0] + (next_pt[0] - curr_pt[0]) * frac
-                            asset.current_long = curr_pt[1] + (next_pt[1] - curr_pt[1]) * frac
-                            asset.bearing = bearing
-                            state['last_bearing'] = bearing # Update for physics next tick check
-                    
-                    # PHYSICS UPDATE (Restored)
-                    # Adjust speed for next tick based on curvature
-                    # simplified to use the last bearing of the tick
-                    
-                    # We compare current bearing with previous 'last_bearing' stored in state (which we just updated?)
-                    # Ideally we want the DELTA of bearing. 
-                    # If we just updated last_bearing, we lost the previous one. 
-                    # But for now, let's keep it simple: constant speed for now to ensure stability, 
-                    # or re-implement correct lookahead. 
-                    # I'll stick to a simpler model: Speed is mostly constant but reduced if we did many turns?
-                    # Let's just restore the basic speed:
-                    
-                    target_speed = BASE_SPEED_KMH
-                    # Random jitter for realism
-                    if random.random() < 0.1:
-                        target_speed += random.uniform(-10, 10)
+                            curr_pt = waypoints[idx]
+                            next_pt = waypoints[idx + 1]
+                            
+                            seg_dist_km = haversine_distance(curr_pt[0], curr_pt[1], next_pt[0], next_pt[1])
+                            
+                            if seg_dist_km < 0.0001: 
+                                state['current_index'] += 1
+                                state['progress_km'] = 0.0
+                                continue
+                            
+                            # Calculate physics for this segment (Speed/Bearing)
+                            bearing = calculate_bearing(curr_pt[0], curr_pt[1], next_pt[0], next_pt[1])
+                            
+                            # Prevent negative distance
+                            dist_on_seg_km = max(0.0, seg_dist_km - state['progress_km'])
+                            
+                            if dist_remaining_km >= dist_on_seg_km:
+                                # Finish segment
+                                dist_remaining_km -= dist_on_seg_km
+                                state['current_index'] += 1
+                                state['progress_km'] = 0.0
+                            else:
+                                # End in segment
+                                state['progress_km'] += dist_remaining_km
+                                dist_remaining_km = 0 
+                                
+                                frac = state['progress_km'] / seg_dist_km
+                                asset.current_lat = curr_pt[0] + (next_pt[0] - curr_pt[0]) * frac
+                                asset.current_long = curr_pt[1] + (next_pt[1] - curr_pt[1]) * frac
+                                asset.bearing = bearing
+                                state['last_bearing'] = bearing 
                         
-                    state['speed_kmh'] = (state['speed_kmh'] * 0.8) + (target_speed * 0.2)
+                        # Apply jitter/physics updates
+                        target_speed = BASE_SPEED_KMH
+                        if random.random() < 0.1:
+                            target_speed += random.uniform(-10, 10)
+                        state['speed_kmh'] = (state['speed_kmh'] * 0.8) + (target_speed * 0.2)
 
                 await db.commit()
         
@@ -149,6 +152,7 @@ async def simulate():
             print(f"CRITICAL SIMULATION ERROR: {e}")
             await asyncio.sleep(5)
             continue
+
 
         await asyncio.sleep(UPDATE_INTERVAL_SEC)
 

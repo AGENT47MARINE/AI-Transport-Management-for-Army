@@ -1,3 +1,4 @@
-from .asset import TransportAsset
-from .convoy import Convoy
-from .route import Route
+from app.models.asset import TransportAsset
+from app.models.convoy import Convoy
+from app.models.route import Route
+from app.models.checkpoint import Checkpoint

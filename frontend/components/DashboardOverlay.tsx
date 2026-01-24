@@ -3,7 +3,12 @@
 import React, { useState } from 'react';
 import { Plus, Truck, MapPin, X, Save, Navigation } from 'lucide-react';
 
-export default function DashboardOverlay() {
+interface DashboardOverlayProps {
+    routeForm?: any;
+    setRouteForm?: any;
+}
+
+export default function DashboardOverlay({ routeForm, setRouteForm }: DashboardOverlayProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [activeModal, setActiveModal] = useState<'none' | 'asset' | 'convoy' | 'route'>('none');
 
@@ -68,14 +73,19 @@ export default function DashboardOverlay() {
         }
     };
 
-    // Route Form State
-    const [routeForm, setRouteForm] = useState({
+    // Route Form State -> Lifted to Parent (page.tsx)
+    // Local fallback if not provided (should not happen in updated usage)
+    const localRouteFormState = useState({
         name: '',
-        start_lat: 32.6896,
-        start_long: 74.8376,
-        end_lat: 33.9872,
-        end_long: 74.7736
+        start_lat: 0,
+        start_long: 0,
+        end_lat: 0,
+        end_long: 0
     });
+
+    // Use props if available, else local
+    const activeRouteForm = routeForm || localRouteFormState[0];
+    const setActiveRouteForm = setRouteForm || localRouteFormState[1];
 
     const handleCreateAsset = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -132,7 +142,7 @@ export default function DashboardOverlay() {
             const res = await fetch('http://localhost:8000/api/v1/routes/plan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(routeForm)
+                body: JSON.stringify(activeRouteForm)
             });
             if (res.ok) {
                 alert('Route Planned with OSRM High-Fidelity!');
@@ -201,7 +211,7 @@ export default function DashboardOverlay() {
                             <span>New Convoy</span>
                         </button>
                         <button
-                            onClick={() => setActiveModal('asset')}
+                            onClick={() => window.location.href = '/assets/new'}
                             style={{
                                 backgroundColor: '#1e293b',
                                 color: 'white',
@@ -523,8 +533,8 @@ export default function DashboardOverlay() {
                                     <input
                                         type="text"
                                         required
-                                        value={routeForm.name}
-                                        onChange={e => setRouteForm({ ...routeForm, name: e.target.value })}
+                                        value={activeRouteForm.name}
+                                        onChange={e => setActiveRouteForm({ ...activeRouteForm, name: e.target.value })}
                                         placeholder="e.g. Route-Charlie-Logistics"
                                         style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: 'white' }}
                                     />
@@ -532,21 +542,21 @@ export default function DashboardOverlay() {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                     <div>
                                         <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '5px' }}>Start Lat</label>
-                                        <input type="number" step="0.0001" value={routeForm.start_lat} onChange={e => setRouteForm({ ...routeForm, start_lat: parseFloat(e.target.value) })} style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: 'white' }} />
+                                        <input type="number" step="0.0001" value={activeRouteForm.start_lat} onChange={e => setActiveRouteForm({ ...activeRouteForm, start_lat: parseFloat(e.target.value) })} style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: 'white' }} />
                                     </div>
                                     <div>
                                         <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '5px' }}>Start Long</label>
-                                        <input type="number" step="0.0001" value={routeForm.start_long} onChange={e => setRouteForm({ ...routeForm, start_long: parseFloat(e.target.value) })} style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: 'white' }} />
+                                        <input type="number" step="0.0001" value={activeRouteForm.start_long} onChange={e => setActiveRouteForm({ ...activeRouteForm, start_long: parseFloat(e.target.value) })} style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: 'white' }} />
                                     </div>
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                     <div>
                                         <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '5px' }}>End Lat</label>
-                                        <input type="number" step="0.0001" value={routeForm.end_lat} onChange={e => setRouteForm({ ...routeForm, end_lat: parseFloat(e.target.value) })} style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: 'white' }} />
+                                        <input type="number" step="0.0001" value={activeRouteForm.end_lat} onChange={e => setActiveRouteForm({ ...activeRouteForm, end_lat: parseFloat(e.target.value) })} style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: 'white' }} />
                                     </div>
                                     <div>
                                         <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '5px' }}>End Long</label>
-                                        <input type="number" step="0.0001" value={routeForm.end_long} onChange={e => setRouteForm({ ...routeForm, end_long: parseFloat(e.target.value) })} style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: 'white' }} />
+                                        <input type="number" step="0.0001" value={activeRouteForm.end_long} onChange={e => setActiveRouteForm({ ...activeRouteForm, end_long: parseFloat(e.target.value) })} style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: 'white' }} />
                                     </div>
                                 </div>
 

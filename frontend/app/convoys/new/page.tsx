@@ -10,6 +10,8 @@ export default function NewConvoyPage() {
     const [startSearchResults, setStartSearchResults] = useState<any[]>([]);
     const [endSearchResults, setEndSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [view, setView] = useState<'input' | 'review'>('input');
+    const [generatedPlan, setGeneratedPlan] = useState<any>(null);
 
     const [form, setForm] = useState({
         name: '',
@@ -55,28 +57,94 @@ export default function NewConvoyPage() {
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    // Updated Submit -> Generate Plan
+    const handleGeneratePlan = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            // For now, we create the convoy in DRAFT/PLANNED state as a "Plan"
+            // In a real system, we might hit a specific /plan endpoint, but create works for now.
             const res = await fetch('http://localhost:8000/api/v1/convoys/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...form,
-                    // Ensure non-zero lat/longs or nulls if you prefer, backend handles it
-                })
+                body: JSON.stringify(form)
             });
             if (res.ok) {
-                alert('Convoy Plan Created Successfully!');
-                router.push('/');
+                const plan = await res.json();
+                setGeneratedPlan(plan);
+                setView('review');
             } else {
-                alert('Failed to create convoy');
+                alert('Failed to generate plan');
             }
         } catch (err) {
             console.error(err);
-            alert('Error creating convoy');
+            alert('Error generating plan');
         }
     };
+
+    const handleConfirm = () => {
+        // Here we could call an update endpoint to set status='CONFIRMED'
+        // For now, we assume the plan is accepted.
+        alert('Convoy Mission Confirmed & Initiated!');
+        router.push('/');
+    };
+
+    if (view === 'review' && generatedPlan) {
+        return (
+            <div style={{ minHeight: '100vh', background: '#0f172a', color: 'white', padding: '20px' }}>
+                <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                    <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px', color: '#eab308' }}>Review Generated Plan</h1>
+
+                    <div style={{ background: '#1e293b', padding: '24px', borderRadius: '12px', border: '1px solid #334155', marginBottom: '20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+                            <div>
+                                <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>{generatedPlan.name}</h2>
+                                <div style={{ color: '#94a3b8' }}>{generatedPlan.start_location} ➝ {generatedPlan.end_location}</div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#3b82f6' }}>{generatedPlan.route?.risk_level || 'LOW'} RISK</div>
+                                <div style={{ color: '#94a3b8', fontSize: '12px' }}>AI ANALYSIS</div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '20px', background: '#0f172a', padding: '15px', borderRadius: '8px' }}>
+                            <div>
+                                <label style={{ fontSize: '11px', color: '#64748b', display: 'block' }}>DEPARTURE</label>
+                                <div>{new Date(generatedPlan.start_time).toLocaleString()}</div>
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '11px', color: '#64748b', display: 'block' }}>EST. ARRIVAL</label>
+                                <div>{generatedPlan.estimated_arrival_time ? new Date(generatedPlan.estimated_arrival_time).toLocaleString() : 'N/A'}</div>
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '11px', color: '#64748b', display: 'block' }}>ASSETS</label>
+                                <div>{generatedPlan.assets?.length || 0} Vehicles</div>
+                            </div>
+                        </div>
+
+                        {/* Route Waypoints Visualization Placeholder */}
+                        <div style={{ height: '200px', background: '#020617', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #334155', color: '#475569' }}>
+                            Map Visualization of {generatedPlan.route ? generatedPlan.route.waypoints.length : 0} Waypoints
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '15px' }}>
+                        <button
+                            onClick={() => setView('input')}
+                            style={{ flex: 1, padding: '15px', background: 'transparent', border: '1px solid #475569', color: '#cbd5e1', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                        >
+                            Back to Edit
+                        </button>
+                        <button
+                            onClick={handleConfirm}
+                            style={{ flex: 2, padding: '15px', background: '#10b981', border: 'none', color: 'black', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}
+                        >
+                            Confirm & Execute Mission
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={{ minHeight: '100vh', background: '#0f172a', color: 'white', padding: '20px' }}>
@@ -88,7 +156,7 @@ export default function NewConvoyPage() {
                     <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Plan New Convoy</h1>
                 </header>
 
-                <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
+                <form onSubmit={handleGeneratePlan} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
 
                     {/* LEFT COLUMN - MAIN DETAILS */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -231,7 +299,7 @@ export default function NewConvoyPage() {
                                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
                             }}>
                                 <Save size={20} />
-                                Initiate Convoy Plan
+                                Generate Plan
                             </button>
                         </div>
                     </div>

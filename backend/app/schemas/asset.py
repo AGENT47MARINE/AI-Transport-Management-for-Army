@@ -9,6 +9,8 @@ class TransportAssetBase(BaseModel):
     current_lat: Optional[float] = None
     current_long: Optional[float] = None
     fuel_status: float = 100.0
+    driver_name: Optional[str] = None
+    personnel_count: Optional[int] = 0
 
 class TransportAssetCreate(TransportAssetBase):
     """Schema for creating a new asset (client input)"""

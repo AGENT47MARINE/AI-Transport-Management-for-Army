@@ -22,14 +22,31 @@ interface Route {
   status: string;
 }
 
+interface Checkpoint {
+  id: number;
+  name: string;
+  lat: number;
+  long: number;
+  checkpoint_type: string;
+}
+
 interface MapProps {
   assets: Asset[];
   routes?: Route[];
+  checkpoints?: Checkpoint[];
+  draftRoute?: {
+    start_lat: number;
+    start_long: number;
+    end_lat: number;
+    end_long: number;
+  };
+  onRoutePointUpdate?: (point: 'start' | 'end', lat: number, lng: number) => void;
 }
 
-export default function MapComponent({ assets, routes = [] }: MapProps) {
+export default function MapComponent({ assets, routes = [], checkpoints = [], draftRoute, onRoutePointUpdate }: MapProps) {
   const mapRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<L.Layer[]>([]); // Store all layers (markers + polylines)
+  const markersRef = useRef<L.Layer[]>([]); // Store asset/route layers
+  const checkpointMarkersRef = useRef<L.Layer[]>([]); // Store TCP layers separate to toggle
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Initialize map once
@@ -47,7 +64,7 @@ export default function MapComponent({ assets, routes = [] }: MapProps) {
     // --- BASE LAYERS ---
     const radarLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       maxZoom: 19
-    }).addTo(map); // Default
+    }).addTo(map);
 
     const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 19
@@ -57,7 +74,6 @@ export default function MapComponent({ assets, routes = [] }: MapProps) {
       maxZoom: 19
     });
 
-    // Add Layer Control
     const baseMaps = {
       "Radar (Dark)": radarLayer,
       "Satellite (Terrain)": satelliteLayer,
@@ -68,13 +84,28 @@ export default function MapComponent({ assets, routes = [] }: MapProps) {
 
     mapRef.current = map;
 
+    // Zoom Listener for TCP Visibility
+    map.on('zoomend', () => {
+      const zoom = map.getZoom();
+      // Show TCPs only if Zoom > 10 (closer view)
+      const showTCPs = zoom > 10;
+
+      checkpointMarkersRef.current.forEach(layer => {
+        if (showTCPs) {
+          if (!map.hasLayer(layer)) layer.addTo(map);
+        } else {
+          if (map.hasLayer(layer)) layer.remove();
+        }
+      });
+    });
+
     return () => {
       map.remove();
       mapRef.current = null;
     };
   }, []);
 
-  // Update layers (Markers + Routes) when data changes
+  // Update layers (Markers + Routes + Checkpoints) when data changes
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -82,6 +113,51 @@ export default function MapComponent({ assets, routes = [] }: MapProps) {
     // Remove old layers
     markersRef.current.forEach(layer => layer.remove());
     markersRef.current = [];
+    checkpointMarkersRef.current.forEach(layer => layer.remove());
+    checkpointMarkersRef.current = [];
+
+    // --- RENDER CHECKPOINTS (TCPs) ---
+    // Create markers but only add to map if zoom level is sufficient
+    const currentZoom = map.getZoom();
+    const showTCPsInitial = currentZoom > 10;
+
+    checkpoints.forEach(tcp => {
+      const iconHtml = `
+          <div style="
+            background: #ef4444; 
+            border: 2px solid white; 
+            color: white; 
+            width: 24px; 
+            height: 24px; 
+            border-radius: 4px;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-weight: bold;
+            font-size: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+          ">
+            TCP
+          </div>
+        `;
+      const icon = L.divIcon({
+        html: iconHtml,
+        className: 'tcp-icon',
+        iconSize: [24, 24]
+      });
+
+      const marker = L.marker([tcp.lat, tcp.long], { icon });
+      marker.bindPopup(`
+            <div style="font-family: system-ui; min-width: 150px; background: #0f172a; color: white; border: 1px solid #334155; padding: 10px; border-radius: 6px;">
+                <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #ef4444;">${tcp.name}</div>
+                <div style="color: #94a3b8; font-size: 11px;">${tcp.location_name || ''}</div>
+                <div style="font-size: 10px; color: #64748b; margin-top:5px;">Type: ${tcp.checkpoint_type}</div>
+            </div>
+        `);
+
+      if (showTCPsInitial) marker.addTo(map);
+      checkpointMarkersRef.current.push(marker);
+    });
 
     // --- RENDER ROUTES ---
     routes.forEach(route => {
@@ -193,7 +269,59 @@ export default function MapComponent({ assets, routes = [] }: MapProps) {
       }
     });
 
-  }, [assets, routes]); // Re-run when data changes
+
+
+    // --- RENDER DRAFT MARKERS (Draggable) ---
+    if (draftRoute && onRoutePointUpdate) {
+      // Start Marker
+      if (draftRoute.start_lat !== 0) {
+        const startMarker = L.marker([draftRoute.start_lat, draftRoute.start_long], {
+          draggable: true,
+          icon: L.divIcon({
+            className: 'custom-start-icon',
+            html: `<div style="background:#10b981; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>`,
+            iconSize: [16, 16]
+          })
+        }).addTo(map);
+
+        startMarker.on('dragend', (e) => {
+          const ll = e.target.getLatLng();
+          onRoutePointUpdate('start', Number(ll.lat.toFixed(6)), Number(ll.lng.toFixed(6)));
+        });
+        markersRef.current.push(startMarker);
+      }
+
+      // End Marker
+      if (draftRoute.end_lat !== 0) {
+        const endMarker = L.marker([draftRoute.end_lat, draftRoute.end_long], {
+          draggable: true,
+          icon: L.divIcon({
+            className: 'custom-end-icon',
+            html: `<div style="background:#ef4444; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>`,
+            iconSize: [16, 16]
+          })
+        }).addTo(map);
+
+        endMarker.on('dragend', (e) => {
+          const ll = e.target.getLatLng();
+          onRoutePointUpdate('end', Number(ll.lat.toFixed(6)), Number(ll.lng.toFixed(6)));
+        });
+        markersRef.current.push(endMarker);
+      }
+
+      // Map Click to Set Points (if missing)
+      map.on('click', (e: L.LeafletMouseEvent) => {
+        if (draftRoute.start_lat === 0) {
+          onRoutePointUpdate('start', Number(e.latlng.lat.toFixed(6)), Number(e.latlng.lng.toFixed(6)));
+        } else if (draftRoute.end_lat === 0) {
+          onRoutePointUpdate('end', Number(e.latlng.lat.toFixed(6)), Number(e.latlng.lng.toFixed(6)));
+        }
+      });
+    }
+
+
+
+  }, [assets, routes, draftRoute]); // Re-run when data changes
 
   return (
     <div

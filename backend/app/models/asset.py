@@ -21,6 +21,9 @@ class TransportAsset(Base):
     bearing = Column(Float, default=0.0, doc="Heading in degrees (0=North, 90=East)")
     
     fuel_status = Column(Float, default=100.0, doc="Fuel percentage")
+    
+    driver_name = Column(String, nullable=True, doc="Name of the driver")
+    personnel_count = Column(Integer, default=0, doc="Number of personnel on board")
 
     convoy_id = Column(Integer, ForeignKey("convoys.id"), nullable=True)
     convoy = relationship("Convoy", back_populates="assets")

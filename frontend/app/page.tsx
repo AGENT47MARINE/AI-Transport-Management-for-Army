@@ -42,20 +42,45 @@ export default function Home() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [convoys, setConvoys] = useState<Convoy[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
+  const [checkpoints, setCheckpoints] = useState<any[]>([]); // TCPs
   const [activeTab, setActiveTab] = useState<'assets' | 'convoys'>('assets');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Search State for Sidebar
+  const [assetSearch, setAssetSearch] = useState('');
+  const [convoySearch, setConvoySearch] = useState('');
+
+  // Lifted Route Form State for Draggable Markers
+  const [routeForm, setRouteForm] = useState({
+    name: '',
+    start_lat: 0,
+    start_long: 0,
+    end_lat: 0,
+    end_long: 0
+  });
+
+  // Handler for map clicks/drags to update form
+  const handleRoutePointUpdate = (point: 'start' | 'end', lat: number, lng: number) => {
+    setRouteForm(prev => ({
+      ...prev,
+      [point === 'start' ? 'start_lat' : 'end_lat']: lat,
+      [point === 'start' ? 'start_long' : 'end_long']: lng
+    }));
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [assetRes, convoyRes, routeRes] = await Promise.all([
+        const [assetRes, convoyRes, routeRes, checkpointRes] = await Promise.all([
           fetch(`${API_BASE}/assets/`),
           fetch(`${API_BASE}/convoys/`),
-          fetch(`${API_BASE}/routes/`)
+          fetch(`${API_BASE}/routes/`),
+          fetch(`${API_BASE}/checkpoints/`)
         ]);
         if (assetRes.ok) setAssets(await assetRes.json());
         if (convoyRes.ok) setConvoys(await convoyRes.json());
         if (routeRes.ok) setRoutes(await routeRes.json());
+        if (checkpointRes.ok) setCheckpoints(await checkpointRes.json());
       } catch (e) {
         console.error('API Error:', e);
       }
@@ -77,7 +102,13 @@ export default function Home() {
     }}>
       {/* MAP - Full Screen Background */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
-        <MapComponent assets={assets} routes={routes} />
+        <MapComponent
+          assets={assets}
+          routes={routes}
+          checkpoints={checkpoints}
+          draftRoute={routeForm}
+          onRoutePointUpdate={handleRoutePointUpdate}
+        />
       </div>
 
       {/* HEADER BAR */}
@@ -224,60 +255,105 @@ export default function Home() {
 
         {/* Content */}
         <div style={{ flex: 1, overflow: 'auto', padding: 10 }}>
-          {activeTab === 'assets' && assets.map((asset, i) => (
-            <div key={asset.id} style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 10,
-              padding: 12,
-              marginBottom: 8,
-              cursor: 'pointer'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <div>
-                  <div style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>{asset.name}</div>
-                  <div style={{ color: '#64748b', fontSize: 11 }}>{asset.asset_type}</div>
-                </div>
-                <span style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: asset.is_available ? '#10b981' : '#f59e0b'
-                }} />
-              </div>
-              <div style={{ display: 'flex', gap: 15, fontSize: 10, color: '#64748b' }}>
-                <span>Fuel: {asset.fuel_status}%</span>
-                <span>Pos: {asset.current_lat?.toFixed(2)}, {asset.current_long?.toFixed(2)}</span>
-              </div>
-            </div>
-          ))}
 
-          {activeTab === 'convoys' && convoys.map((convoy) => (
-            <div key={convoy.id} style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 10,
-              padding: 12,
-              marginBottom: 8
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>{convoy.name}</span>
-                <span style={{
-                  padding: '2px 8px',
+          {/* ASSETS TAB */}
+          {activeTab === 'assets' && (
+            <>
+              <div style={{ marginBottom: 10, padding: '0 5px' }}>
+                <input
+                  type="text"
+                  placeholder="Search Assets..."
+                  value={assetSearch}
+                  onChange={(e) => setAssetSearch(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: 6,
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    background: 'rgba(0,0,0,0.3)',
+                    color: 'white',
+                    fontSize: 12
+                  }}
+                />
+              </div>
+              {assets.filter(a => a.name.toLowerCase().includes(assetSearch.toLowerCase()) || a.asset_type.toLowerCase().includes(assetSearch.toLowerCase())).map((asset, i) => (
+                <div key={asset.id} style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
                   borderRadius: 10,
-                  fontSize: 10,
-                  fontWeight: 'bold',
-                  background: convoy.status === 'IN_TRANSIT' ? 'rgba(234,179,8,0.2)' : 'rgba(59,130,246,0.2)',
-                  color: convoy.status === 'IN_TRANSIT' ? '#eab308' : '#3b82f6'
+                  padding: 12,
+                  marginBottom: 8,
+                  cursor: 'pointer'
                 }}>
-                  {convoy.status === 'IN_TRANSIT' ? 'LIVE' : 'PLAN'}
-                </span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <div>
+                      <div style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>{asset.name}</div>
+                      <div style={{ color: '#64748b', fontSize: 11 }}>{asset.asset_type}</div>
+                    </div>
+                    <span style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: asset.is_available ? '#10b981' : '#f59e0b'
+                    }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 15, fontSize: 10, color: '#64748b' }}>
+                    <span>Fuel: {asset.fuel_status}%</span>
+                    <span>Pos: {asset.current_lat?.toFixed(2)}, {asset.current_long?.toFixed(2)}</span>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* CONVOYS TAB */}
+          {activeTab === 'convoys' && (
+            <>
+              <div style={{ marginBottom: 10, padding: '0 5px' }}>
+                <input
+                  type="text"
+                  placeholder="Search Convoys..."
+                  value={convoySearch}
+                  onChange={(e) => setConvoySearch(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: 6,
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    background: 'rgba(0,0,0,0.3)',
+                    color: 'white',
+                    fontSize: 12
+                  }}
+                />
               </div>
-              <div style={{ fontSize: 11, color: '#94a3b8' }}>
-                {convoy.start_location} → {convoy.end_location}
-              </div>
-            </div>
-          ))}
+              {convoys.filter(c => c.name.toLowerCase().includes(convoySearch.toLowerCase()) || c.start_location.toLowerCase().includes(convoySearch.toLowerCase())).map((convoy) => (
+                <div key={convoy.id} style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 10,
+                  padding: 12,
+                  marginBottom: 8
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>{convoy.name}</span>
+                    <span style={{
+                      padding: '2px 8px',
+                      borderRadius: 10,
+                      fontSize: 10,
+                      fontWeight: 'bold',
+                      background: convoy.status === 'IN_TRANSIT' ? 'rgba(234,179,8,0.2)' : 'rgba(59,130,246,0.2)',
+                      color: convoy.status === 'IN_TRANSIT' ? '#eab308' : '#3b82f6'
+                    }}>
+                      {convoy.status === 'IN_TRANSIT' ? 'LIVE' : 'PLAN'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#94a3b8' }}>
+                    {convoy.start_location} → {convoy.end_location}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
 
         {/* Footer */}
@@ -296,7 +372,10 @@ export default function Home() {
       </div>
 
       {/* MANUAL ENTRY OVERLAY */}
-      <DashboardOverlay />
+      <DashboardOverlay
+        routeForm={routeForm}
+        setRouteForm={setRouteForm}
+      />
     </div>
   );
 }

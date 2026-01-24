@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api.endpoints import assets, convoys, routes, optimization
+from app.api.endpoints import assets, convoys, routes, optimization, checkpoints
 import app.models.asset 
 import app.models.convoy # Register Convoy model
 import app.models.route # Register Route model
@@ -35,6 +35,7 @@ app.include_router(assets.router, prefix=f"{settings.API_V1_STR}/assets", tags=[
 app.include_router(convoys.router, prefix=f"{settings.API_V1_STR}/convoys", tags=["convoys"])
 app.include_router(routes.router, prefix=f"{settings.API_V1_STR}/routes", tags=["routes"])
 app.include_router(optimization.router, prefix=f"{settings.API_V1_STR}/optimization", tags=["optimization"])
+app.include_router(checkpoints.router, prefix=f"{settings.API_V1_STR}/checkpoints", tags=["checkpoints"])
 
 # Basic Health Check Endpoint
 @app.get("/")
