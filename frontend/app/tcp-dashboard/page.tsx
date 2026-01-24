@@ -9,6 +9,13 @@ export default function TcpDashboard() {
     const [indents, setIndents] = useState<any[]>([]);
 
     useEffect(() => {
+        // Auth Check
+        const token = localStorage.getItem('token');
+        if (!token) {
+            router.push('/');
+            return;
+        }
+
         // Fetch pending indents
         fetch('http://localhost:8000/api/v1/logistics/pending')
             .then(res => res.json())

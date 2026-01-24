@@ -83,7 +83,7 @@ export default function NewAssetPage() {
                                     type="text" required
                                     value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
                                     placeholder="e.g. ALS-Stallion-05"
-                                    style={{ width: '100%', padding: '12px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
+                                    className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
                                 />
                             </div>
 
@@ -92,7 +92,7 @@ export default function NewAssetPage() {
                                     <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Type</label>
                                     <select
                                         value={form.asset_type} onChange={e => setForm({ ...form, asset_type: e.target.value })}
-                                        style={{ width: '100%', padding: '12px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
+                                        className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
                                     >
                                         <option value="TRUCK">Truck</option>
                                         <option value="JEEP">Jeep</option>
@@ -106,7 +106,7 @@ export default function NewAssetPage() {
                                     <input
                                         type="number" step="0.1" min="0"
                                         value={form.capacity_tons} onChange={e => setForm({ ...form, capacity_tons: parseFloat(e.target.value) })}
-                                        style={{ width: '100%', padding: '12px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
+                                        className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
                                     />
                                 </div>
                             </div>
@@ -126,7 +126,7 @@ export default function NewAssetPage() {
                                         type="text"
                                         value={form.driver_name} onChange={e => setForm({ ...form, driver_name: e.target.value })}
                                         placeholder="Driver Name"
-                                        style={{ width: '100%', padding: '12px 12px 12px 36px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
+                                        className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 pl-9 focus:outline-none focus:border-[#3b82f6]"
                                     />
                                 </div>
                             </div>
@@ -137,7 +137,7 @@ export default function NewAssetPage() {
                                     <input
                                         type="number" min="0"
                                         value={form.personnel_count} onChange={e => setForm({ ...form, personnel_count: parseInt(e.target.value) })}
-                                        style={{ width: '100%', padding: '12px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
+                                        className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
                                     />
                                 </div>
                                 <div>
@@ -147,7 +147,7 @@ export default function NewAssetPage() {
                                         <input
                                             type="number" min="0" max="100"
                                             value={form.fuel_status} onChange={e => setForm({ ...form, fuel_status: parseFloat(e.target.value) })}
-                                            style={{ width: '100%', padding: '12px 12px 12px 36px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
+                                            className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 pl-9 focus:outline-none focus:border-[#3b82f6]"
                                         />
                                     </div>
                                 </div>
@@ -171,7 +171,7 @@ export default function NewAssetPage() {
                                         type="text"
                                         value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                                         placeholder="Enter city or place..."
-                                        style={{ width: '100%', padding: '12px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
+                                        className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
                                     />
                                     <button type="button" onClick={() => handleSearchLocation(searchQuery)} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0 15px', cursor: 'pointer' }}>
                                         <Search size={18} />

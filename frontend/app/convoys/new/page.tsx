@@ -179,7 +179,7 @@ export default function NewConvoyPage() {
                                     type="text" required
                                     value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
                                     placeholder="e.g. CVY-Alpha-01"
-                                    style={{ width: '100%', padding: '12px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
+                                    className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
                                 />
                             </div>
 
@@ -235,7 +235,7 @@ export default function NewConvoyPage() {
                                             end_long: route?.waypoints?.at(-1)?.[1] || form.end_long
                                         });
                                     }}
-                                    style={{ width: '100%', padding: '12px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
+                                    className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
                                 >
                                     <option value="">-- Auto-Plan New Route --</option>
                                     {existingRoutes.map(r => (
@@ -258,7 +258,7 @@ export default function NewConvoyPage() {
                                                 type="text"
                                                 value={form.start_location} onChange={e => setForm({ ...form, start_location: e.target.value })}
                                                 placeholder="Search Start City..."
-                                                style={{ width: '100%', padding: '12px 12px 12px 36px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
+                                                className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 pl-9 focus:outline-none focus:border-[#3b82f6]"
                                             />
                                         </div>
                                         <button type="button" onClick={() => handleSearch(form.start_location, 'start')} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0 20px', cursor: 'pointer' }}>
@@ -289,7 +289,7 @@ export default function NewConvoyPage() {
                                                 type="text"
                                                 value={form.end_location} onChange={e => setForm({ ...form, end_location: e.target.value })}
                                                 placeholder="Search Destination..."
-                                                style={{ width: '100%', padding: '12px 12px 12px 36px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
+                                                className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 pl-9 focus:outline-none focus:border-[#3b82f6]"
                                             />
                                         </div>
                                         <button type="button" onClick={() => handleSearch(form.end_location, 'end')} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0 20px', cursor: 'pointer' }}>
