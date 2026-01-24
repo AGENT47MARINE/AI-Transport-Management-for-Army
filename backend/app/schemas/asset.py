@@ -13,6 +13,7 @@ class TransportAssetBase(BaseModel):
     personnel_count: Optional[int] = 0
     number_plate: Optional[str] = None
     past_movements: Optional[str] = "[]"
+    convoy_id: Optional[int] = None
 
 class TransportAssetCreate(TransportAssetBase):
     """Schema for creating a new asset (client input)"""

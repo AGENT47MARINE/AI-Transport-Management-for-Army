@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from typing import List
 
 from app.core.database import get_db
@@ -41,8 +42,8 @@ async def create_convoy(convoy: ConvoyCreate, db: AsyncSession = Depends(get_db)
             asset.convoy_id = new_convoy.id
             db.add(asset)
 
-    # 2. Auto-Plan Route if coordinates provided (Dijkstra/OSRM)
-    if start_lat and start_long and end_lat and end_long:
+    # 2. Auto-Plan Route if coordinates provided AND no existing route selected
+    if not new_convoy.route_id and start_lat and start_long and end_lat and end_long:
         try:
             waypoints = await fetch_osrm_route(start_lat, start_long, end_lat, end_long)
             if waypoints:
@@ -67,6 +68,29 @@ async def read_convoys(skip: int = 0, limit: int = 100, db: AsyncSession = Depen
     """
     List all convoys.
     """
-    result = await db.execute(select(Convoy).offset(skip).limit(limit))
+    stmt = (
+        select(Convoy)
+        .options(selectinload(Convoy.assets), selectinload(Convoy.route))
+        .offset(skip)
+        .limit(limit)
+    )
+    result = await db.execute(stmt)
     convoys = result.scalars().all()
     return convoys
+
+@router.get("/{convoy_id}", response_model=ConvoySchema)
+async def read_convoy(convoy_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Get a specific convoy by ID with full details (assets, route).
+    """
+    stmt = (
+        select(Convoy)
+        .options(selectinload(Convoy.assets), selectinload(Convoy.route))
+        .where(Convoy.id == convoy_id)
+    )
+    result = await db.execute(stmt)
+    convoy = result.scalars().first()
+    
+    if not convoy:
+        raise HTTPException(status_code=404, detail="Convoy not found")
+    return convoy

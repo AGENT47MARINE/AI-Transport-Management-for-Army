@@ -12,6 +12,7 @@ export default function NewConvoyPage() {
     const [isSearching, setIsSearching] = useState(false);
     const [view, setView] = useState<'input' | 'review'>('input');
     const [generatedPlan, setGeneratedPlan] = useState<any>(null);
+    const [existingRoutes, setExistingRoutes] = useState<any[]>([]); // NEW: Store routes
 
     const [form, setForm] = useState({
         name: '',
@@ -23,13 +24,21 @@ export default function NewConvoyPage() {
         end_long: 0,
         start_time: '',
         estimated_arrival_time: '',
-        asset_ids: [] as number[]
+        asset_ids: [] as number[],
+        route_id: null as number | null // NEW field
     });
 
     useEffect(() => {
+        // Fetch Assets
         fetch('http://localhost:8000/api/v1/assets/')
             .then(res => res.json())
             .then(data => setAssets(data))
+            .catch(err => console.error(err));
+
+        // Fetch Routes
+        fetch('http://localhost:8000/api/v1/routes/')
+            .then(res => res.json())
+            .then(data => setExistingRoutes(data))
             .catch(err => console.error(err));
     }, []);
 
@@ -205,66 +214,101 @@ export default function NewConvoyPage() {
                         <div style={{ background: '#1e293b', padding: '20px', borderRadius: '12px', border: '1px solid #334155' }}>
                             <h2 style={{ fontSize: '18px', marginBottom: '15px', color: '#3b82f6' }}>Route Planning</h2>
 
-                            {/* START POINT */}
-                            <div style={{ marginBottom: '15px' }}>
-                                <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Start Point</label>
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                    <div style={{ flex: 1, position: 'relative' }}>
-                                        <MapPin size={16} style={{ position: 'absolute', top: '14px', left: '12px', color: '#64748b' }} />
-                                        <input
-                                            type="text"
-                                            value={form.start_location} onChange={e => setForm({ ...form, start_location: e.target.value })}
-                                            placeholder="Search Start City..."
-                                            style={{ width: '100%', padding: '12px 12px 12px 36px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
-                                        />
-                                    </div>
-                                    <button type="button" onClick={() => handleSearch(form.start_location, 'start')} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0 20px', cursor: 'pointer' }}>
-                                        <Search size={18} />
-                                    </button>
-                                </div>
-                                {startSearchResults.length > 0 && (
-                                    <div style={{ background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', marginTop: '5px', maxHeight: '150px', overflowY: 'auto' }}>
-                                        {startSearchResults.map((res, idx) => (
-                                            <div key={idx} onClick={() => {
-                                                setForm({ ...form, start_location: res.display_name.split(',')[0], start_lat: parseFloat(res.lat), start_long: parseFloat(res.lon) });
-                                                setStartSearchResults([]);
-                                            }} style={{ padding: '10px', fontSize: '13px', borderBottom: '1px solid #1e293b', cursor: 'pointer' }} className="hover:bg-slate-800">
-                                                {res.display_name}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                            {/* PRE-EXISTING ROUTE SELECTOR */}
+                            <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px dashed #334155' }}>
+                                <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Select Existing Route (Optional)</label>
+                                <select
+                                    value={form.route_id || ''}
+                                    onChange={(e) => {
+                                        const rId = e.target.value ? parseInt(e.target.value) : null;
+                                        const route = existingRoutes.find(r => r.id === rId);
+                                        setForm({
+                                            ...form,
+                                            route_id: rId,
+                                            // Auto-fill required fields to satisfy backend schema if they are empty
+                                            start_location: route ? `(Route) Start of ${route.name}` : form.start_location,
+                                            end_location: route ? `(Route) End of ${route.name}` : form.end_location,
+                                            // Extract lat/long from route waypoints if available
+                                            start_lat: route?.waypoints?.[0]?.[0] || form.start_lat,
+                                            start_long: route?.waypoints?.[0]?.[1] || form.start_long,
+                                            end_lat: route?.waypoints?.at(-1)?.[0] || form.end_lat,
+                                            end_long: route?.waypoints?.at(-1)?.[1] || form.end_long
+                                        });
+                                    }}
+                                    style={{ width: '100%', padding: '12px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
+                                >
+                                    <option value="">-- Auto-Plan New Route --</option>
+                                    {existingRoutes.map(r => (
+                                        <option key={r.id} value={r.id}>{r.name} ({r.risk_level} RISK)</option>
+                                    ))}
+                                </select>
                             </div>
 
-                            {/* DESTINATION */}
-                            <div>
-                                <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Destination</label>
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                    <div style={{ flex: 1, position: 'relative' }}>
-                                        <MapPin size={16} style={{ position: 'absolute', top: '14px', left: '12px', color: '#64748b' }} />
-                                        <input
-                                            type="text"
-                                            value={form.end_location} onChange={e => setForm({ ...form, end_location: e.target.value })}
-                                            placeholder="Search Destination..."
-                                            style={{ width: '100%', padding: '12px 12px 12px 36px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
-                                        />
-                                    </div>
-                                    <button type="button" onClick={() => handleSearch(form.end_location, 'end')} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0 20px', cursor: 'pointer' }}>
-                                        <Search size={18} />
-                                    </button>
+                            <div style={{ opacity: form.route_id ? 0.5 : 1, pointerEvents: form.route_id ? 'none' : 'auto', transition: 'opacity 0.3s' }}>
+                                <div style={{ fontSize: '12px', color: '#eab308', marginBottom: '10px' }}>
+                                    {form.route_id ? '⚠ Manual entry disabled because an existing route is selected.' : 'Or manually specify start/end points:'}
                                 </div>
-                                {endSearchResults.length > 0 && (
-                                    <div style={{ background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', marginTop: '5px', maxHeight: '150px', overflowY: 'auto' }}>
-                                        {endSearchResults.map((res, idx) => (
-                                            <div key={idx} onClick={() => {
-                                                setForm({ ...form, end_location: res.display_name.split(',')[0], end_lat: parseFloat(res.lat), end_long: parseFloat(res.lon) });
-                                                setEndSearchResults([]);
-                                            }} style={{ padding: '10px', fontSize: '13px', borderBottom: '1px solid #1e293b', cursor: 'pointer' }} className="hover:bg-slate-800">
-                                                {res.display_name}
-                                            </div>
-                                        ))}
+                                {/* START POINT */}
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Start Point</label>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <div style={{ flex: 1, position: 'relative' }}>
+                                            <MapPin size={16} style={{ position: 'absolute', top: '14px', left: '12px', color: '#64748b' }} />
+                                            <input
+                                                type="text"
+                                                value={form.start_location} onChange={e => setForm({ ...form, start_location: e.target.value })}
+                                                placeholder="Search Start City..."
+                                                style={{ width: '100%', padding: '12px 12px 12px 36px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
+                                            />
+                                        </div>
+                                        <button type="button" onClick={() => handleSearch(form.start_location, 'start')} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0 20px', cursor: 'pointer' }}>
+                                            <Search size={18} />
+                                        </button>
                                     </div>
-                                )}
+                                    {startSearchResults.length > 0 && (
+                                        <div style={{ background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', marginTop: '5px', maxHeight: '150px', overflowY: 'auto' }}>
+                                            {startSearchResults.map((res, idx) => (
+                                                <div key={idx} onClick={() => {
+                                                    setForm({ ...form, start_location: res.display_name.split(',')[0], start_lat: parseFloat(res.lat), start_long: parseFloat(res.lon) });
+                                                    setStartSearchResults([]);
+                                                }} style={{ padding: '10px', fontSize: '13px', borderBottom: '1px solid #1e293b', cursor: 'pointer' }} className="hover:bg-slate-800">
+                                                    {res.display_name}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* DESTINATION */}
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Destination</label>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <div style={{ flex: 1, position: 'relative' }}>
+                                            <MapPin size={16} style={{ position: 'absolute', top: '14px', left: '12px', color: '#64748b' }} />
+                                            <input
+                                                type="text"
+                                                value={form.end_location} onChange={e => setForm({ ...form, end_location: e.target.value })}
+                                                placeholder="Search Destination..."
+                                                style={{ width: '100%', padding: '12px 12px 12px 36px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
+                                            />
+                                        </div>
+                                        <button type="button" onClick={() => handleSearch(form.end_location, 'end')} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0 20px', cursor: 'pointer' }}>
+                                            <Search size={18} />
+                                        </button>
+                                    </div>
+                                    {endSearchResults.length > 0 && (
+                                        <div style={{ background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', marginTop: '5px', maxHeight: '150px', overflowY: 'auto' }}>
+                                            {endSearchResults.map((res, idx) => (
+                                                <div key={idx} onClick={() => {
+                                                    setForm({ ...form, end_location: res.display_name.split(',')[0], end_lat: parseFloat(res.lat), end_long: parseFloat(res.lon) });
+                                                    setEndSearchResults([]);
+                                                }} style={{ padding: '10px', fontSize: '13px', borderBottom: '1px solid #1e293b', cursor: 'pointer' }} className="hover:bg-slate-800">
+                                                    {res.display_name}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

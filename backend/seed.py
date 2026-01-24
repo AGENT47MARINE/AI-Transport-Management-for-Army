@@ -82,7 +82,47 @@ async def seed_data():
         )
 
         db.add(route_main)
-        print("Added Precision Route.")
+        print("Added Precision Route: IXJ-SXR.")
+        await db.flush()
+
+        # ROUTE 2: PATHANKOT (Base) -> UDHAMPUR (HQ)
+        start_ptk = [32.2643, 75.6527]
+        end_udh = [32.9265, 75.1360]
+        print("Fetching Route: Pathankot -> Udhampur...")
+        wp_ptk_udh = await fetch_osrm_route(start_ptk, end_udh)
+        
+        # Fallback if OSRM fails
+        if not wp_ptk_udh:
+            wp_ptk_udh = [start_ptk, end_udh] 
+
+        route_ptk = Route(
+            name="Route: Pathankot-Udhampur Supply Line",
+            risk_level="LOW",
+            status="OPEN",
+            waypoints=wp_ptk_udh
+        )
+        db.add(route_ptk)
+        print("Added Route: Pathankot-Udhampur.")
+        await db.flush()
+
+        # ROUTE 3: LEH -> KARGIL (High Altitude)
+        start_leh = [34.1500, 77.5667]
+        end_kargil = [34.5500, 76.1333]
+        print("Fetching Route: Leh -> Kargil...")
+        wp_leh_kgl = await fetch_osrm_route(start_leh, end_kargil)
+        
+        if not wp_leh_kgl:
+            wp_leh_kgl = [start_leh, [34.3, 76.8], end_kargil]
+
+        route_leh = Route(
+            name="Route: Leh-Kargil Axis",
+            risk_level="MEDIUM",
+            status="CAUTION (SNOW)",
+            waypoints=wp_leh_kgl
+        )
+        db.add(route_leh)
+        print("Added Route: Leh-Kargil.")
+        await db.flush()
 
         # Commit route first to get ID
         await db.flush()
@@ -166,6 +206,24 @@ async def seed_data():
             # --- PUNJAB/JAMMU BORDER ---
             Checkpoint(name="TCP-27 Lakhanpur", location_name="J&K-Punjab Border", lat=32.3667, long=75.6167, checkpoint_type="Toll Plaza/Excise", capacity=500, tcp_incharge="ETO Gupta", scheduled_departures='["0000", "0600", "1200", "1800"]'),
             Checkpoint(name="TCP-28 Samba", location_name="Samba Chowk", lat=32.5500, long=75.1167, checkpoint_type="Police Post", capacity=100, tcp_incharge="SI Balwinder", scheduled_departures='["0800", "1600"]'),
+
+            # --- AIRPORTS & AIRBASES (Northern India) ---
+            Checkpoint(name="Srinagar Airport (SXR)", location_name="Budgam, J&K", lat=34.0087, long=74.7740, checkpoint_type="International Airport", capacity=500, tcp_incharge="CISF", scheduled_departures='[]'),
+            Checkpoint(name="Jammu Airport (IXJ)", location_name="Satwari, Jammu", lat=32.6891, long=74.8375, checkpoint_type="Civil Airport", capacity=300, tcp_incharge="CISF", scheduled_departures='[]'),
+            Checkpoint(name="Leh Airport (IXL)", location_name="Leh, Ladakh", lat=34.1359, long=77.5465, checkpoint_type="Domestic Airport", capacity=150, tcp_incharge="Army/CISF", scheduled_departures='[]'),
+            Checkpoint(name="Thoise Airbase", location_name="Nubra, Ladakh", lat=34.6465, long=77.3695, checkpoint_type="Military Airbase", capacity=200, tcp_incharge="IAF", scheduled_departures='[]'),
+            Checkpoint(name="Awantipora AFS", location_name="Pulwama, J&K", lat=33.9317, long=74.9818, checkpoint_type="Military Airbase", capacity=400, tcp_incharge="IAF", scheduled_departures='[]'),
+            Checkpoint(name="Udhampur AFS", location_name="Udhampur, J&K", lat=32.9095, long=75.1542, checkpoint_type="Military Airbase", capacity=300, tcp_incharge="IAF", scheduled_departures='[]'),
+            Checkpoint(name="Pathankot AFS", location_name="Pathankot, Punjab", lat=32.2338, long=75.6341, checkpoint_type="Military Airbase", capacity=600, tcp_incharge="IAF", scheduled_departures='[]'),
+            Checkpoint(name="Adampur AFS", location_name="Jalandhar, Punjab", lat=31.4337, long=75.7608, checkpoint_type="Military Airbase", capacity=300, tcp_incharge="IAF", scheduled_departures='[]'),
+            Checkpoint(name="Amritsar Airport (ATQ)", location_name="Amritsar, Punjab", lat=31.7096, long=74.7973, checkpoint_type="International Airport", capacity=800, tcp_incharge="CISF", scheduled_departures='[]'),
+            Checkpoint(name="Chandigarh Airport (IXC)", location_name="Mohali, Punjab", lat=30.6735, long=76.7885, checkpoint_type="International Airport", capacity=600, tcp_incharge="CISF", scheduled_departures='[]'),
+            Checkpoint(name="Bhisiana AFS", location_name="Bhatinda, Punjab", lat=30.2709, long=74.7570, checkpoint_type="Military Airbase", capacity=400, tcp_incharge="IAF", scheduled_departures='[]'),
+            Checkpoint(name="Halwara AFS", location_name="Ludhiana, Punjab", lat=30.7512, long=75.6267, checkpoint_type="Military Airbase", capacity=300, tcp_incharge="IAF", scheduled_departures='[]'),
+            Checkpoint(name="Ambala AFS", location_name="Ambala, Haryana", lat=30.3692, long=76.8153, checkpoint_type="Military Airbase", capacity=500, tcp_incharge="IAF", scheduled_departures='[]'),
+            Checkpoint(name="Gaggal Airport", location_name="Kangra, HP", lat=32.1652, long=76.2634, checkpoint_type="Domestic Airport", capacity=100, tcp_incharge="HP Police", scheduled_departures='[]'),
+            Checkpoint(name="Bhuntar Airport", location_name="Kullu, HP", lat=31.8763, long=77.1541, checkpoint_type="Domestic Airport", capacity=100, tcp_incharge="HP Police", scheduled_departures='[]'),
+            Checkpoint(name="Shimla Airport", location_name="Jubbarhatti, HP", lat=31.0818, long=77.0673, checkpoint_type="Domestic Airport", capacity=80, tcp_incharge="HP Police", scheduled_departures='[]'),
         ]
         db.add_all(checkpoints)
         print(f"Added {len(checkpoints)} Traffic Control Checkpoints.")

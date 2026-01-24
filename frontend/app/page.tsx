@@ -20,6 +20,7 @@ interface Asset {
   fuel_status: number;
   current_lat?: number;
   current_long?: number;
+  convoy_id?: number;
 }
 
 interface Convoy {
@@ -28,6 +29,7 @@ interface Convoy {
   start_location: string;
   end_location: string;
   status: string;
+  route_id?: number;
 }
 
 interface Route {
@@ -105,6 +107,7 @@ export default function Home() {
         <MapComponent
           assets={assets}
           routes={routes}
+          convoys={convoys}
           checkpoints={checkpoints}
           draftRoute={routeForm}
           onRoutePointUpdate={handleRoutePointUpdate}
@@ -327,13 +330,21 @@ export default function Home() {
                 />
               </div>
               {convoys.filter(c => c.name.toLowerCase().includes(convoySearch.toLowerCase()) || c.start_location.toLowerCase().includes(convoySearch.toLowerCase())).map((convoy) => (
-                <div key={convoy.id} style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 10,
-                  padding: 12,
-                  marginBottom: 8
-                }}>
+                <div
+                  key={convoy.id}
+                  onClick={() => window.location.href = `/convoys/${convoy.id}`}
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 10,
+                    padding: 12,
+                    marginBottom: 8,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                >
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                     <span style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>{convoy.name}</span>
                     <span style={{

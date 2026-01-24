@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster';
@@ -39,9 +39,19 @@ interface Checkpoint {
   upcoming_convoys?: any[];
 }
 
+interface Convoy {
+  id: number;
+  name: string;
+  start_location: string;
+  end_location: string;
+  status: string;
+  route_id?: number;
+}
+
 interface MapProps {
   assets: Asset[];
   routes?: Route[];
+  convoys?: Convoy[];
   checkpoints?: Checkpoint[];
   draftRoute?: {
     start_lat: number;
@@ -50,15 +60,29 @@ interface MapProps {
     end_long: number;
   };
   onRoutePointUpdate?: (point: 'start' | 'end', lat: number, lng: number) => void;
+  initialSelectedRouteId?: number;
 }
 
-export default function MapComponent({ assets, routes = [], checkpoints = [], draftRoute, onRoutePointUpdate }: MapProps) {
+export default function MapComponent({ assets, routes = [], convoys = [], checkpoints = [], draftRoute, onRoutePointUpdate, initialSelectedRouteId }: MapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Layer[]>([]); // Store non-clustered layers (routes, draft markers)
   const clusterGroupRef = useRef<L.MarkerClusterGroup | null>(null);
   const checkpointMarkersRef = useRef<L.Layer[]>([]); // Store TCP layers separate to toggle
   const containerRef = useRef<HTMLDivElement>(null);
   const prevStaticAssetsJson = useRef<string>('[]'); // For deep comparison of static assets
+
+  // State for selected route (visible only when Convoy clicked)
+  const selectedRouteIdRef = useRef<number | null>(null); // Use Ref to avoid re-initializing map? No, need re-render of layers.
+  // Actually, standard Ref for layers avoids React re-renders, but we need to trigger the effect. 
+  // Let's use a Ref for tracking selection but maybe trigger update via dependency?
+  // Ideally, passing selectedRouteId as prop or state.
+  // Let's make it internal state but since we use Refs for Leaflet, we can just clear/redraw layers.
+  // But we need a trigger. Let's add a dummy state or just rely on the effect.
+  // Wait, if I click inside the map, I need to update the layers.
+  // Let's use a state variable for selectedRouteId.
+  // However, since this component uses refs heavily, let's stick to that pattern OR introduce state.
+  // Using state will trigger re-render of component function, hitting the useEffect.
+  const [selectedRouteId, setSelectedRouteId] = useState<number | null>(initialSelectedRouteId || null);
 
   // Initialize map once
   useEffect(() => {
@@ -121,11 +145,18 @@ export default function MapComponent({ assets, routes = [], checkpoints = [], dr
     // Zoom Listener for TCP Visibility
     map.on('zoomend', () => {
       const zoom = map.getZoom();
-      // Show TCPs only if Zoom > 10 (closer view)
-      const showTCPs = zoom > 10;
 
-      checkpointMarkersRef.current.forEach(layer => {
-        if (showTCPs) {
+      checkpointMarkersRef.current.forEach((layer: any) => {
+        // Retrieve custom data attached to marker if possible, or check icon URL/HTML?
+        // Better: we can't easily check marker properties here without storing metadata.
+        // Quick fix: Check if the icon HTML contains "AP" (Airport) or color blue.
+        const iconHtml = layer.options.icon.options.html;
+        const isAirport = iconHtml.includes('AP');
+
+        // Show Airports at Zoom > 6, Regular TCPs at Zoom > 10
+        const shouldShow = isAirport ? zoom > 9 : zoom > 10;
+
+        if (shouldShow) {
           if (!map.hasLayer(layer)) layer.addTo(map);
         } else {
           if (map.hasLayer(layer)) layer.remove();
@@ -159,12 +190,18 @@ export default function MapComponent({ assets, routes = [], checkpoints = [], dr
     // --- RENDER CHECKPOINTS (TCPs) ---
     // Create markers but only add to map if zoom level is sufficient
     const currentZoom = map.getZoom();
-    const showTCPsInitial = currentZoom > 10;
+    // Default visibility thresholds
+    const showTCPsThreshold = 10;
+    const showAirportsThreshold = 6;
 
     checkpoints.forEach(tcp => {
+      const isAirport = tcp.checkpoint_type.includes('Airport') || tcp.checkpoint_type.includes('Airbase') || tcp.checkpoint_type.includes('AFS');
+      const badgeColor = isAirport ? '#3b82f6' : '#ef4444';
+      const badgeText = isAirport ? 'AP' : 'TC';
+
       const iconHtml = `
           <div style="
-            background: #ef4444; 
+            background: ${badgeColor}; 
             border: 2px solid white; 
             color: white; 
             width: 24px; 
@@ -173,8 +210,10 @@ export default function MapComponent({ assets, routes = [], checkpoints = [], dr
             display: flex; 
             align-items: center; 
             justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
           ">
-            TC
+            ${badgeText}
           </div>
       `;
 
@@ -188,14 +227,16 @@ export default function MapComponent({ assets, routes = [], checkpoints = [], dr
       const marker = L.marker([tcp.lat, tcp.long], { icon });
 
       // Only add to map if zoom is sufficient
-      if (showTCPsInitial) {
+      const isVisible = isAirport ? currentZoom > showAirportsThreshold : currentZoom > showTCPsThreshold;
+
+      if (isVisible) {
         marker.addTo(map);
       }
       checkpointMarkersRef.current.push(marker);
 
       marker.bindPopup(`
             <div style="font-family: system-ui; min-width: 150px; background: #0f172a; color: white; border: 1px solid #334155; padding: 10px; border-radius: 6px;">
-                <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #ef4444;">${tcp.name}</div>
+                <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px; color: ${badgeColor};">${tcp.name}</div>
                 <div style="color: #94a3b8; font-size: 11px;">${tcp.location_name || ''}</div>
                 <div style="font-size: 10px; color: #cbd5e1; margin-top:5px; border-top: 1px solid #334155; padding-top: 5px;">
                    <div>📋 Type: <b>${tcp.checkpoint_type}</b></div>
@@ -212,6 +253,9 @@ export default function MapComponent({ assets, routes = [], checkpoints = [], dr
 
     // --- RENDER ROUTES ---
     routes.forEach(route => {
+      // Only show route if it is selected
+      if (route.id !== selectedRouteId) return;
+
       if (!route.waypoints || route.waypoints.length < 2) return;
 
       let color = '#3b82f6'; // Default Blue
@@ -262,6 +306,18 @@ export default function MapComponent({ assets, routes = [], checkpoints = [], dr
             `;
         const icon = L.divIcon({ html: iconHtml, className: 'custom-vehicle-icon', iconSize: [24, 24], iconAnchor: [12, 12] });
         const marker = L.marker([asset.current_lat, asset.current_long], { icon }).addTo(map);
+
+        // Click Handler: Show associated Route
+        marker.on('click', () => {
+          if (asset.convoy_id) {
+            const convoy = convoys.find(c => c.id === asset.convoy_id);
+            if (convoy && convoy.route_id) {
+              setSelectedRouteId(convoy.route_id);
+              // Also open popup?
+              marker.openPopup();
+            }
+          }
+        });
 
         const popupContent = `
               <div style="font-family: system-ui; min-width: 150px; background: #0f172a; color: white; border: 1px solid #334155; padding: 10px; border-radius: 6px;">
@@ -407,7 +463,7 @@ export default function MapComponent({ assets, routes = [], checkpoints = [], dr
 
 
 
-  }, [assets, routes, draftRoute]); // Re-run when data changes
+  }, [assets, routes, draftRoute, checkpoints, convoys, selectedRouteId]); // Re-run when data changes
 
   return (
     <div

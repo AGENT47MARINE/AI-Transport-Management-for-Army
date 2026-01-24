@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
+from app.schemas.asset import TransportAsset
+from app.schemas.route import Route
 
 class ConvoyBase(BaseModel):
     name: str
@@ -17,10 +19,14 @@ class ConvoyCreate(ConvoyBase):
     end_long: Optional[float] = None
     start_time: Optional[datetime] = None
     estimated_arrival_time: Optional[datetime] = None
+    route_id: Optional[int] = None
 
 class Convoy(ConvoyBase):
     id: int
     start_time: datetime
+    route_id: Optional[int] = None
+    assets: List[TransportAsset] = []
+    route: Optional[Route] = None
 
     class Config:
         from_attributes = True
