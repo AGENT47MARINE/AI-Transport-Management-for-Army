@@ -350,16 +350,17 @@ export default function MapComponent({ assets, routes = [], convoys = [], checkp
         const icon = L.divIcon({ html: iconHtml, className: 'custom-vehicle-icon', iconSize: [24, 24], iconAnchor: [12, 12] });
         const marker = L.marker([asset.current_lat, asset.current_long], { icon }).addTo(map);
 
-        // Click Handler: Show associated Route
+        // Click Handler: Show associated Route and open popup
         marker.on('click', () => {
+          // Select the route if this asset belongs to a convoy
           if (asset.convoy_id) {
             const convoy = convoys.find(c => c.id === asset.convoy_id);
             if (convoy && convoy.route_id) {
               setSelectedRouteId(convoy.route_id);
-              // Also open popup?
-              marker.openPopup();
             }
           }
+          // Always open popup to show details
+          marker.openPopup();
         });
 
         const popupContent = `
@@ -383,7 +384,11 @@ export default function MapComponent({ assets, routes = [], convoys = [], checkp
                 </div>
               </div>
             `;
-        marker.bindPopup(popupContent);
+        marker.bindPopup(popupContent, {
+          autoClose: false,
+          closeOnClick: false,
+          className: 'dark-popup'
+        });
         markersRef.current.push(marker);
       }
     });

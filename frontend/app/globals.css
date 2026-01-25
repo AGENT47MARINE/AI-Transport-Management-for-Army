@@ -47,6 +47,21 @@ body {
   border: 1px solid #334155 !important;
 }
 
+/* Dark popup styling */
+.dark-popup .leaflet-popup-content-wrapper {
+  background: transparent !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8) !important;
+  border-radius: 8px !important;
+}
+
+.leaflet-popup {
+  z-index: 1000 !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+}
+
 .custom-marker-icon {
   background: transparent !important;
   border: none !important;

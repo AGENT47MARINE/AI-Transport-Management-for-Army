@@ -170,31 +170,43 @@ export default function ConvoyDetailPage({ params }: { params: Promise<{ id: str
                         Manifest
                     </h2>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {assets.map((asset: any) => (
-                            <div key={asset.id} style={{
-                                background: '#1e293b',
-                                border: '1px solid #334155',
-                                borderRadius: '6px',
-                                padding: '12px',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center'
-                            }}>
-                                <div>
-                                    <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{asset.name}</div>
-                                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                        {assets.map((asset: any) => {
+                            // Role-based color
+                            let roleColor = '#10b981';
+                            switch (asset.role) {
+                                case 'ROP': roleColor = '#facc15'; break;
+                                case 'QRT': roleColor = '#ef4444'; break;
+                                case 'TECH': roleColor = '#3b82f6'; break;
+                                case 'AMBULANCE': roleColor = '#d946ef'; break;
+                                case 'COMMS': roleColor = '#06b6d4'; break;
+                                case 'COMMANDER': roleColor = '#f59e0b'; break;
+                                case 'CARGO': roleColor = '#10b981'; break;
+                            }
+                            return (
+                                <div key={asset.id} style={{
+                                    background: '#1e293b',
+                                    border: '1px solid #334155',
+                                    borderRadius: '6px',
+                                    padding: '12px',
+                                    cursor: 'pointer'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                        <div style={{ fontWeight: 'bold', fontSize: '14px', color: roleColor }}>{asset.name}</div>
+                                        <div style={{ fontSize: '10px', color: roleColor, fontWeight: 'bold', padding: '2px 6px', background: 'rgba(0,0,0,0.3)', borderRadius: '4px' }}>
+                                            {asset.role || 'CARGO'}
+                                        </div>
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>
                                         {asset.asset_type} • {asset.driver_name || 'No Pilot'}
                                     </div>
+                                    <div style={{ display: 'flex', gap: '10px', fontSize: '10px', color: '#64748b' }}>
+                                        <span>👥 {asset.personnel_count || 0}</span>
+                                        <span>⛽ {asset.fuel_status || 0}%</span>
+                                        <span>📦 {asset.capacity_tons || 0}t</span>
+                                    </div>
                                 </div>
-                                <div style={{
-                                    width: '8px',
-                                    height: '8px',
-                                    borderRadius: '50%',
-                                    background: asset.is_available ? '#10b981' : '#f59e0b',
-                                    boxShadow: asset.is_available ? '0 0 5px #10b981' : 'none'
-                                }} />
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 </div>
 
