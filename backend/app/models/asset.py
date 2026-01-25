@@ -11,6 +11,7 @@ class TransportAsset(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, doc="Vehicle identifier or name")
+    role = Column(String, default="CARGO", doc="Formation Role: ROP, QRT, COMMANDER, etc.")
     asset_type = Column(String, doc="Type: Truck, Jeep, ALS, etc.")
     asset_source = Column(String, default="MILITARY", doc="MILITARY, CIVIL_REQ, CIVIL_OBSERVED")
     capacity_tons = Column(Float, doc="Load carrying capacity in tons")

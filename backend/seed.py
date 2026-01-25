@@ -152,10 +152,16 @@ async def seed_data():
             TransportAsset(name="SXR-01 (Rapid)", asset_type="Maruti Gypsy", capacity_tons=0.5, is_available=True, current_lat=end_pt[0], current_long=end_pt[1], fuel_status=100.0, driver_name="Sub. Major Khan", personnel_count=3),
             TransportAsset(name="SXR-Bus-01", asset_type="Bus", capacity_tons=0.0, is_available=True, current_lat=end_pt[0], current_long=end_pt[1], fuel_status=95.0, driver_name="Civ. Driver Ram", personnel_count=30),
 
-            # Assets In Transit (Assigned to Convoy) - 3 Vehicles as requested
-            TransportAsset(name="CVY-Alpha Lead", asset_type="Ashok Leyland Stallion", capacity_tons=2.5, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=65.0, convoy_id=convoy1.id, driver_name="Nk. Gurdeep", personnel_count=12),
-            TransportAsset(name="CVY-Alpha Mid", asset_type="Tatra 8x8", capacity_tons=10.0, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=62.0, convoy_id=convoy1.id, driver_name="Hav. Mahendra", personnel_count=4),
-            TransportAsset(name="CVY-Alpha Rear", asset_type="Tatra 6x6", capacity_tons=8.0, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=60.0, convoy_id=convoy1.id, driver_name="Sep. John Doe", personnel_count=2),
+            # Assets In Transit (Assigned to Convoy) - FULL FORMATION
+            TransportAsset(name="CVY-Alpha-ROP", asset_type="Maruti Gypsy", capacity_tons=0.5, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=90.0, convoy_id=convoy1.id, driver_name="Nk. Vikram", personnel_count=4, role="ROP"),
+            TransportAsset(name="CVY-Alpha-QRT-Front", asset_type="Light Vehicle", capacity_tons=0.5, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=88.0, convoy_id=convoy1.id, driver_name="L/Nk. Raju", personnel_count=4, role="QRT"),
+            TransportAsset(name="CVY-Alpha-Tech", asset_type="Recovery Vehicle", capacity_tons=5.0, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=85.0, convoy_id=convoy1.id, driver_name="Hav. Kumar", personnel_count=3, role="TECH"),
+            TransportAsset(name="CVY-Alpha-Cargo-01", asset_type="ALS Stallion", capacity_tons=5.0, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=65.0, convoy_id=convoy1.id, driver_name="Nk. Gurdeep", personnel_count=12, role="CARGO"),
+            TransportAsset(name="CVY-Alpha-Cargo-02", asset_type="Tatra 8x8", capacity_tons=10.0, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=62.0, convoy_id=convoy1.id, driver_name="Hav. Mahendra", personnel_count=4, role="CARGO"),
+            TransportAsset(name="CVY-Alpha-Ambulance", asset_type="Army Ambulance", capacity_tons=2.0, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=75.0, convoy_id=convoy1.id, driver_name="Sep. Medic Rao", personnel_count=2, role="AMBULANCE"),
+            TransportAsset(name="CVY-Alpha-Comms", asset_type="Comms Vehicle", capacity_tons=1.5, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=70.0, convoy_id=convoy1.id, driver_name="Sig. Naik", personnel_count=3, role="COMMS"),
+            TransportAsset(name="CVY-Alpha-Commander", asset_type="Maruti Gypsy (Command)", capacity_tons=0.5, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=85.0, convoy_id=convoy1.id, driver_name="Major Rathore", personnel_count=3, role="COMMANDER"),
+            TransportAsset(name="CVY-Alpha-QRT-Rear", asset_type="Light Vehicle", capacity_tons=0.5, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=82.0, convoy_id=convoy1.id, driver_name="Sep. Ajay", personnel_count=4, role="QRT"),
             
             # Idle/Busy Assets elsewhere
             TransportAsset(name="Udhampur-Recov", asset_type="Recovery Vehicle", capacity_tons=15.0, is_available=True, current_lat=32.9266, current_long=75.1370, fuel_status=88.0, driver_name="Hav. Tech Singh", personnel_count=3),

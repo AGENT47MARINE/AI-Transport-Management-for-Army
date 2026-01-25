@@ -163,74 +163,170 @@ async def simulate():
                         
                     waypoints = convoy.route.waypoints
                     
-                    # Move all assets in this convoy
-                    for asset in convoy.assets:
-                        state = asset_states.get(asset.id)
-                        if not state:
-                            state = { 'current_index': 0, 'progress_km': 0.0, 'speed_kmh': 0.0, 'last_bearing': 0.0 }
-                            asset_states[asset.id] = state
-
-                        # Calculate max distance to move this tick
-                        # If speed is 0, give it a kickstart speed
-                        if state['speed_kmh'] < 1.0:
-                             state['speed_kmh'] = BASE_SPEED_KMH
-
-                        dist_remaining_km = state['speed_kmh'] * (UPDATE_INTERVAL_SEC / 3600.0)
+                    # --- CONVOY FORMATION LOGIC ---
+                    # 1. Assign Roles if missing (Mock for Demo)
+                    assets = convoy.assets
+                    if not assets: continue
+                    
+                    # Check if roles are already assigned
+                    has_roles = any(a.role != "CARGO" for a in assets)
+                    
+                    if not has_roles and len(assets) > 0:
+                        # Auto-assign roles based on index for demo visualization
+                        # Order: ROP -> QRT -> TECH -> (CARGO...) -> AMBULANCE -> COMMS -> COMMANDER -> QRT
+                        sorted_assets = sorted(assets, key=lambda a: a.id)
                         
-                        safety_loop_count = 0
+                        count = len(sorted_assets)
+                        if count >= 1: sorted_assets[0].role = "ROP"
+                        if count >= 2: sorted_assets[1].role = "QRT"
+                        if count >= 3: sorted_assets[2].role = "TECH"
                         
-                        # Move along waypoints consuming distance
-                        while dist_remaining_km > 0:
-                            safety_loop_count += 1
-                            if safety_loop_count > 100:
-                                break
-                                
-                            idx = state['current_index']
+                        # Last few
+                        if count >= 5: sorted_assets[-1].role = "QRT" # Rear Guard
+                        if count >= 6: sorted_assets[-2].role = "COMMANDER"
+                        if count >= 7: sorted_assets[-3].role = "COMMS"
+                        if count >= 8: sorted_assets[-4].role = "AMBULANCE"
+                        
+                        # Save assigned roles
+                        # (In a real app, we'd commit this, but for sim loop we can just modify the objects in session)
+                        pass
+
+                    # 2. Sort Assets by Formation Order
+                    formation_priority = {
+                        "ROP": 1,
+                        "QRT": 2, # Front QRT
+                        "TECH": 3,
+                        "CARGO": 4,
+                        "AMBULANCE": 5,
+                        "COMMS": 6,
+                        "COMMANDER": 7,
+                        # Rear QRT is tricky because it has same role name. 
+                        # We'll handle strictly by list order if roles match.
+                    }
+                    
+                    # We can't distinguish Front/Rear QRT easily by string alone without extra logic, 
+                    # so we rely on the list order we just set or ID.
+                    # A robust way: Separate lists.
+                    
+                    # For simplicity: Sort by Priority then ID.
+                    # Actually, if we just assigned them by index, they are essentially sorted.
+                    # But let's enforce a generic sort: ROP always lead.
+                    
+                    formation_assets = sorted(assets, key=lambda a: formation_priority.get(a.role, 4))
+                    
+                    # 3. Move Lead Vehicle (ROP)
+                    lead_asset = formation_assets[0]
+                    state = asset_states.get(lead_asset.id)
+                    if not state:
+                        # Initialize leader
+                        state = { 'current_index': 0, 'progress_km': 0.0, 'speed_kmh': BASE_SPEED_KMH, 'last_bearing': 0.0 }
+                        asset_states[lead_asset.id] = state
+                    
+                    # Physics for Leader
+                    dist_to_move = state['speed_kmh'] * (UPDATE_INTERVAL_SEC / 3600.0)
+                    
+                     # Move along waypoints
+                    safety = 0
+                    while dist_to_move > 0 and safety < 50:
+                        safety += 1
+                        idx = state['current_index']
+                        if idx >= len(waypoints) - 1:
+                            state['current_index'] = 0; idx = 0 # Loop
+                        
+                        curr = waypoints[idx]
+                        next_p = waypoints[idx+1]
+                        seg_len = haversine_distance(curr[0], curr[1], next_p[0], next_p[1])
+                        
+                        if seg_len < 0.0001: 
+                            state['current_index'] += 1; continue
                             
-                            # Handle Loop or Stop at End
-                            if idx >= len(waypoints) - 1:
-                                # Stop at end for now, or loop
-                                state['current_index'] = 0
-                                state['progress_km'] = 0.0
-                                idx = 0
-                            
-                            curr_pt = waypoints[idx]
-                            next_pt = waypoints[idx + 1]
-                            
-                            seg_dist_km = haversine_distance(curr_pt[0], curr_pt[1], next_pt[0], next_pt[1])
-                            
-                            if seg_dist_km < 0.0001: 
-                                state['current_index'] += 1
-                                state['progress_km'] = 0.0
-                                continue
-                            
-                            # Calculate physics for this segment (Speed/Bearing)
-                            bearing = calculate_bearing(curr_pt[0], curr_pt[1], next_pt[0], next_pt[1])
-                            
-                            # Prevent negative distance
-                            dist_on_seg_km = max(0.0, seg_dist_km - state['progress_km'])
-                            
-                            if dist_remaining_km >= dist_on_seg_km:
-                                # Finish segment
-                                dist_remaining_km -= dist_on_seg_km
-                                state['current_index'] += 1
-                                state['progress_km'] = 0.0
+                        avail = seg_len - state['progress_km']
+                        if dist_to_move >= avail:
+                             dist_to_move -= avail
+                             state['current_index'] += 1
+                             state['progress_km'] = 0.0
+                        else:
+                             state['progress_km'] += dist_to_move
+                             dist_to_move = 0
+                             frac = state['progress_km'] / seg_len
+                             # Interpolate
+                             lead_asset.current_lat = curr[0] + (next_p[0]-curr[0])*frac
+                             lead_asset.current_long = curr[1] + (next_p[1]-curr[1])*frac
+                             lead_asset.bearing = calculate_bearing(curr[0],curr[1],next_p[0],next_p[1])
+                    
+                    # 4. Position Followers with Fixed Gap
+                    GAP_KM = 0.05 # 50 meters gap
+                    
+                    # We need the leader's total distance from start of route to calculate offsets easily.
+                    # or just place them iteratively behind.
+                    # Iterative placement is safer on complex routes.
+                    
+                    prev_state = state
+                    prev_asset = lead_asset
+                    
+                    for i in range(1, len(formation_assets)):
+                        follower = formation_assets[i]
+                        
+                        # Follower state tracks where it is *logically*
+                        # Ideally, follower just targets (Leader Pos - Gap).
+                        # simplified: Follower adopts Leader's state from T-minus-X seconds? 
+                        # Or just determine position by walking back 'GAP_KM' from predecessor.
+                        
+                        # Let's walk back from Predecessor's current state
+                        p_idx = prev_state['current_index']
+                        p_prog = prev_state['progress_km']
+                        
+                        req_back = GAP_KM
+                        
+                        # Backtrack logic
+                        curr_idx = p_idx
+                        curr_prog = p_prog
+                        
+                        found_pos = False
+                        
+                        # Backtrack loop
+                        safety_back = 0
+                        while req_back > 0 and safety_back < 50:
+                            safety_back += 1
+                            if curr_prog >= req_back:
+                                curr_prog -= req_back
+                                req_back = 0
+                                found_pos = True
                             else:
-                                # End in segment
-                                state['progress_km'] += dist_remaining_km
-                                dist_remaining_km = 0 
+                                req_back -= curr_prog
+                                # Step back segment
+                                curr_idx -= 1
+                                if curr_idx < 0:
+                                    curr_idx = len(waypoints) - 2 # Loop back wrap-around (simplified)
+                                    # If route is not loop, we might stack at start.
+                                    if curr_idx < 0: curr_idx = 0
                                 
-                                frac = state['progress_km'] / seg_dist_km
-                                asset.current_lat = curr_pt[0] + (next_pt[0] - curr_pt[0]) * frac
-                                asset.current_long = curr_pt[1] + (next_pt[1] - curr_pt[1]) * frac
-                                asset.bearing = bearing
-                                state['last_bearing'] = bearing 
+                                # Get len of this new segment
+                                c = waypoints[curr_idx]
+                                n = waypoints[curr_idx+1]
+                                seg_len = haversine_distance(c[0], c[1], n[0], n[1])
+                                curr_prog = seg_len # We are at end of this segment
                         
-                        # Apply jitter/physics updates
-                        target_speed = BASE_SPEED_KMH
-                        if random.random() < 0.1:
-                            target_speed += random.uniform(-10, 10)
-                        state['speed_kmh'] = (state['speed_kmh'] * 0.8) + (target_speed * 0.2)
+                        # Update Follower Lat/Long
+                        if found_pos:
+                             c = waypoints[curr_idx]
+                             n = waypoints[curr_idx+1]
+                             seg_len = haversine_distance(c[0], c[1], n[0], n[1])
+                             if seg_len > 0.00001:
+                                frac = curr_prog / seg_len
+                                follower.current_lat = c[0] + (n[0]-c[0])*frac
+                                follower.current_long = c[1] + (n[1]-c[1])*frac
+                                follower.bearing = calculate_bearing(c[0],c[1],n[0],n[1])
+                                
+                                # Store state for next guy to follow
+                                f_state = {'current_index': curr_idx, 'progress_km': curr_prog}
+                                prev_state = f_state
+                                asset_states[follower.id] = f_state # Update global match
+                        else:
+                            # Stack at start
+                            follower.current_lat = waypoints[0][0]
+                            follower.current_long = waypoints[0][1]
+                            prev_state = {'current_index': 0, 'progress_km': 0}
 
                 await db.commit()
         

@@ -13,6 +13,7 @@ export default function NewConvoyPage() {
     const [view, setView] = useState<'input' | 'review'>('input');
     const [generatedPlan, setGeneratedPlan] = useState<any>(null);
     const [existingRoutes, setExistingRoutes] = useState<any[]>([]); // NEW: Store routes
+    const [transitCamps, setTransitCamps] = useState<any[]>([]); // NEW: Store Transit Camps
 
     const [form, setForm] = useState({
         name: '',
@@ -25,7 +26,7 @@ export default function NewConvoyPage() {
         start_time: '',
         estimated_arrival_time: '',
         asset_ids: [] as number[],
-        route_id: null as number | null // NEW field
+        route_id: null as number | null
     });
 
     useEffect(() => {
@@ -39,6 +40,15 @@ export default function NewConvoyPage() {
         fetch('http://localhost:8000/api/v1/routes/')
             .then(res => res.json())
             .then(data => setExistingRoutes(data))
+            .catch(err => console.error(err));
+
+        // Fetch Checkpoints (Transit Camps)
+        fetch('http://localhost:8000/api/v1/checkpoints/')
+            .then(res => res.json())
+            .then(data => {
+                const camps = data.filter((cp: any) => cp.checkpoint_type.includes('Transit Camp'));
+                setTransitCamps(camps);
+            })
             .catch(err => console.error(err));
     }, []);
 
@@ -157,54 +167,54 @@ export default function NewConvoyPage() {
 
     return (
         <div style={{ minHeight: '100vh', background: '#0f172a', color: 'white', padding: '20px' }}>
-            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
                 <header style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
                     <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
                         <ArrowLeft size={24} />
                     </button>
-                    <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Plan New Convoy</h1>
+                    <h1 style={{ fontSize: '28px', fontWeight: 'bold' }}>Plan New Convoy</h1>
                 </header>
 
-                <form onSubmit={handleGeneratePlan} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
+                <form onSubmit={handleGeneratePlan} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '40px' }}>
 
                     {/* LEFT COLUMN - MAIN DETAILS */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
 
                         {/* BASIC INFO */}
-                        <div style={{ background: '#1e293b', padding: '20px', borderRadius: '12px', border: '1px solid #334155' }}>
-                            <h2 style={{ fontSize: '18px', marginBottom: '15px', color: '#eab308' }}>Mission Details</h2>
-                            <div style={{ marginBottom: '15px' }}>
-                                <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Convoy ID / Name</label>
+                        <div style={{ background: '#1e293b', padding: '30px', borderRadius: '16px', border: '1px solid #334155', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                            <h2 style={{ fontSize: '20px', marginBottom: '25px', color: '#eab308' }}>Mission Details</h2>
+                            <div style={{ marginBottom: '25px' }}>
+                                <label style={{ display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px', fontWeight: '500' }}>Convoy ID / Name</label>
                                 <input
                                     type="text" required
                                     value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
                                     placeholder="e.g. CVY-Alpha-01"
-                                    className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
-                                    style={{ color: 'white' }}
+                                    className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-xl text-white p-4 focus:outline-none focus:border-[#3b82f6] transition-colors"
+                                    style={{ color: 'white', fontSize: '16px' }}
                                 />
                             </div>
 
                             {/* TIMING */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px' }}>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Departure Time</label>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#0f172a', padding: '10px', borderRadius: '8px', border: '1px solid #475569' }}>
-                                        <Calendar size={16} color="#94a3b8" />
+                                    <label style={{ display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px', fontWeight: '500' }}>Departure Time</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#0f172a', padding: '12px', borderRadius: '12px', border: '1px solid #475569' }}>
+                                        <Calendar size={20} color="#94a3b8" />
                                         <input
                                             type="datetime-local"
                                             value={form.start_time} onChange={e => setForm({ ...form, start_time: e.target.value })}
-                                            style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '14px', width: '100%' }}
+                                            style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '16px', width: '100%', outline: 'none' }}
                                         />
                                     </div>
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Est. Arrival (End Point)</label>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#0f172a', padding: '10px', borderRadius: '8px', border: '1px solid #475569' }}>
-                                        <Clock size={16} color="#94a3b8" />
+                                    <label style={{ display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px', fontWeight: '500' }}>Est. Arrival (End Point)</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#0f172a', padding: '12px', borderRadius: '12px', border: '1px solid #475569' }}>
+                                        <Clock size={20} color="#94a3b8" />
                                         <input
                                             type="datetime-local"
                                             value={form.estimated_arrival_time} onChange={e => setForm({ ...form, estimated_arrival_time: e.target.value })}
-                                            style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '14px', width: '100%' }}
+                                            style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '16px', width: '100%', outline: 'none' }}
                                         />
                                     </div>
                                 </div>
@@ -212,12 +222,12 @@ export default function NewConvoyPage() {
                         </div>
 
                         {/* ROUTING */}
-                        <div style={{ background: '#1e293b', padding: '20px', borderRadius: '12px', border: '1px solid #334155' }}>
-                            <h2 style={{ fontSize: '18px', marginBottom: '15px', color: '#3b82f6' }}>Route Planning</h2>
+                        <div style={{ background: '#1e293b', padding: '30px', borderRadius: '16px', border: '1px solid #334155', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                            <h2 style={{ fontSize: '20px', marginBottom: '25px', color: '#3b82f6' }}>Route Planning</h2>
 
                             {/* PRE-EXISTING ROUTE SELECTOR */}
-                            <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px dashed #334155' }}>
-                                <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Select Existing Route (Optional)</label>
+                            <div style={{ marginBottom: '25px', paddingBottom: '25px', borderBottom: '1px dashed #334155' }}>
+                                <label style={{ display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px', fontWeight: '500' }}>Select Existing Route (Optional)</label>
                                 <select
                                     value={form.route_id || ''}
                                     onChange={(e) => {
@@ -236,8 +246,8 @@ export default function NewConvoyPage() {
                                             end_long: route?.waypoints?.at(-1)?.[1] || form.end_long
                                         });
                                     }}
-                                    className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
-                                    style={{ color: 'white' }}
+                                    className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-xl text-white p-4 focus:outline-none focus:border-[#3b82f6] transition-colors"
+                                    style={{ color: 'white', fontSize: '16px' }}
                                 >
                                     <option value="">-- Auto-Plan New Route --</option>
                                     {existingRoutes.map(r => (
@@ -247,34 +257,50 @@ export default function NewConvoyPage() {
                             </div>
 
                             <div style={{ opacity: form.route_id ? 0.5 : 1, pointerEvents: form.route_id ? 'none' : 'auto', transition: 'opacity 0.3s' }}>
-                                <div style={{ fontSize: '12px', color: '#eab308', marginBottom: '10px' }}>
+                                <div style={{ fontSize: '14px', color: '#eab308', marginBottom: '15px' }}>
                                     {form.route_id ? '⚠ Manual entry disabled because an existing route is selected.' : 'Or manually specify start/end points:'}
                                 </div>
                                 {/* START POINT */}
-                                <div style={{ marginBottom: '15px' }}>
-                                    <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Start Point</label>
-                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                <div style={{ marginBottom: '20px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                        <label style={{ fontSize: '14px', color: '#94a3b8', fontWeight: '500' }}>Start Point</label>
+                                        {transitCamps.length > 0 && (
+                                            <select
+                                                onChange={(e) => {
+                                                    const camp = transitCamps.find(c => c.name === e.target.value);
+                                                    if (camp) {
+                                                        setForm({ ...form, start_location: camp.name, start_lat: camp.lat, start_long: camp.long });
+                                                    }
+                                                }}
+                                                style={{ background: '#0f172a', color: '#f97316', border: '1px solid #f97316', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}
+                                            >
+                                                <option value="">Quick Select: Transit Camp</option>
+                                                {transitCamps.map(tc => <option key={tc.id} value={tc.name}>{tc.name}</option>)}
+                                            </select>
+                                        )}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '15px' }}>
                                         <div style={{ flex: 1, position: 'relative' }}>
-                                            <MapPin size={16} style={{ position: 'absolute', top: '14px', left: '12px', color: '#64748b' }} />
+                                            <MapPin size={20} style={{ position: 'absolute', top: '16px', left: '16px', color: '#64748b' }} />
                                             <input
                                                 type="text"
                                                 value={form.start_location} onChange={e => setForm({ ...form, start_location: e.target.value })}
                                                 placeholder="Search Start City..."
-                                                className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 pl-9 focus:outline-none focus:border-[#3b82f6]"
-                                                style={{ color: 'white' }}
+                                                className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-xl text-white p-4 pl-12 focus:outline-none focus:border-[#3b82f6] transition-colors"
+                                                style={{ color: 'white', fontSize: '16px' }}
                                             />
                                         </div>
-                                        <button type="button" onClick={() => handleSearch(form.start_location, 'start')} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0 20px', cursor: 'pointer' }}>
-                                            <Search size={18} />
+                                        <button type="button" onClick={() => handleSearch(form.start_location, 'start')} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '12px', padding: '0 25px', cursor: 'pointer' }}>
+                                            <Search size={22} />
                                         </button>
                                     </div>
                                     {startSearchResults.length > 0 && (
-                                        <div style={{ background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', marginTop: '5px', maxHeight: '150px', overflowY: 'auto' }}>
+                                        <div style={{ background: '#0f172a', border: '1px solid #475569', borderRadius: '12px', marginTop: '10px', maxHeight: '200px', overflowY: 'auto', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}>
                                             {startSearchResults.map((res, idx) => (
                                                 <div key={idx} onClick={() => {
                                                     setForm({ ...form, start_location: res.display_name.split(',')[0], start_lat: parseFloat(res.lat), start_long: parseFloat(res.lon) });
                                                     setStartSearchResults([]);
-                                                }} style={{ padding: '10px', fontSize: '13px', borderBottom: '1px solid #1e293b', cursor: 'pointer' }} className="hover:bg-slate-800">
+                                                }} style={{ padding: '15px', fontSize: '14px', borderBottom: '1px solid #1e293b', cursor: 'pointer' }} className="hover:bg-slate-800">
                                                     {res.display_name}
                                                 </div>
                                             ))}
@@ -284,29 +310,45 @@ export default function NewConvoyPage() {
 
                                 {/* DESTINATION */}
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Destination</label>
-                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                        <label style={{ fontSize: '14px', color: '#94a3b8', fontWeight: '500' }}>Destination</label>
+                                        {transitCamps.length > 0 && (
+                                            <select
+                                                onChange={(e) => {
+                                                    const camp = transitCamps.find(c => c.name === e.target.value);
+                                                    if (camp) {
+                                                        setForm({ ...form, end_location: camp.name, end_lat: camp.lat, end_long: camp.long });
+                                                    }
+                                                }}
+                                                style={{ background: '#0f172a', color: '#f97316', border: '1px solid #f97316', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}
+                                            >
+                                                <option value="">Quick Select: Transit Camp</option>
+                                                {transitCamps.map(tc => <option key={tc.id} value={tc.name}>{tc.name}</option>)}
+                                            </select>
+                                        )}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '15px' }}>
                                         <div style={{ flex: 1, position: 'relative' }}>
-                                            <MapPin size={16} style={{ position: 'absolute', top: '14px', left: '12px', color: '#64748b' }} />
+                                            <MapPin size={20} style={{ position: 'absolute', top: '16px', left: '16px', color: '#64748b' }} />
                                             <input
                                                 type="text"
                                                 value={form.end_location} onChange={e => setForm({ ...form, end_location: e.target.value })}
                                                 placeholder="Search Destination..."
-                                                className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 pl-9 focus:outline-none focus:border-[#3b82f6]"
-                                                style={{ color: 'white' }}
+                                                className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-xl text-white p-4 pl-12 focus:outline-none focus:border-[#3b82f6] transition-colors"
+                                                style={{ color: 'white', fontSize: '16px' }}
                                             />
                                         </div>
-                                        <button type="button" onClick={() => handleSearch(form.end_location, 'end')} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0 20px', cursor: 'pointer' }}>
-                                            <Search size={18} />
+                                        <button type="button" onClick={() => handleSearch(form.end_location, 'end')} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '12px', padding: '0 25px', cursor: 'pointer' }}>
+                                            <Search size={22} />
                                         </button>
                                     </div>
                                     {endSearchResults.length > 0 && (
-                                        <div style={{ background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', marginTop: '5px', maxHeight: '150px', overflowY: 'auto' }}>
+                                        <div style={{ background: '#0f172a', border: '1px solid #475569', borderRadius: '12px', marginTop: '10px', maxHeight: '200px', overflowY: 'auto', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}>
                                             {endSearchResults.map((res, idx) => (
                                                 <div key={idx} onClick={() => {
                                                     setForm({ ...form, end_location: res.display_name.split(',')[0], end_lat: parseFloat(res.lat), end_long: parseFloat(res.lon) });
                                                     setEndSearchResults([]);
-                                                }} style={{ padding: '10px', fontSize: '13px', borderBottom: '1px solid #1e293b', cursor: 'pointer' }} className="hover:bg-slate-800">
+                                                }} style={{ padding: '15px', fontSize: '14px', borderBottom: '1px solid #1e293b', cursor: 'pointer' }} className="hover:bg-slate-800">
                                                     {res.display_name}
                                                 </div>
                                             ))}
@@ -318,35 +360,36 @@ export default function NewConvoyPage() {
                     </div>
 
                     {/* RIGHT COLUMN - ASSETS & SUBMIT */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div style={{ background: '#1e293b', padding: '20px', borderRadius: '12px', border: '1px solid #334155', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                            <h2 style={{ fontSize: '18px', marginBottom: '15px', color: '#10b981' }}>Allocated Assets</h2>
-                            <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '10px' }}>Select vehicles to assign to this convoy.</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                        <div style={{ background: '#1e293b', padding: '30px', borderRadius: '16px', border: '1px solid #334155', flex: 1, display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                            <h2 style={{ fontSize: '20px', marginBottom: '25px', color: '#10b981' }}>Allocated Assets</h2>
+                            <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '15px' }}>Select vehicles to assign to this convoy.</p>
 
-                            <div className="custom-scrollbar" style={{ flex: 1, maxHeight: '50vh', overflowY: 'auto', background: '#0f172a', borderRadius: '8px', border: '1px solid #475569', padding: '10px' }}>
+                            <div className="custom-scrollbar" style={{ flex: 1, maxHeight: '400px', overflowY: 'auto', background: '#0f172a', borderRadius: '12px', border: '1px solid #475569', padding: '15px' }}>
                                 {assets.map(asset => (
                                     <div key={asset.id} onClick={() => toggleAsset(asset.id)} style={{
-                                        display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', marginBottom: '5px',
+                                        display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', marginBottom: '8px',
                                         background: form.asset_ids.includes(asset.id) ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
                                         border: form.asset_ids.includes(asset.id) ? '1px solid #10b981' : '1px solid transparent',
-                                        borderRadius: '6px', cursor: 'pointer'
+                                        borderRadius: '10px', cursor: 'pointer', transition: 'all 0.2s'
                                     }}>
-                                        <Truck size={16} color={form.asset_ids.includes(asset.id) ? '#10b981' : '#64748b'} />
+                                        <Truck size={20} color={form.asset_ids.includes(asset.id) ? '#10b981' : '#64748b'} />
                                         <div>
-                                            <div style={{ fontSize: '13px', fontWeight: 'bold' }}>{asset.name}</div>
-                                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>{asset.asset_type}</div>
+                                            <div style={{ fontSize: '15px', fontWeight: 'bold' }}>{asset.name}</div>
+                                            <div style={{ fontSize: '13px', color: '#94a3b8' }}>{asset.asset_type}</div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
                             <button type="submit" style={{
-                                marginTop: '20px', width: '100%', padding: '15px',
+                                marginTop: '30px', width: '100%', padding: '20px',
                                 background: 'linear-gradient(to right, #eab308, #ca8a04)',
-                                color: 'black', fontWeight: 'bold', fontSize: '16px', border: 'none', borderRadius: '8px',
-                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
+                                color: 'black', fontWeight: 'bold', fontSize: '18px', border: 'none', borderRadius: '12px',
+                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+                                boxShadow: '0 4px 6px -1px rgba(234, 179, 8, 0.3)'
                             }}>
-                                <Save size={20} />
+                                <Save size={24} />
                                 Generate Plan
                             </button>
                         </div>

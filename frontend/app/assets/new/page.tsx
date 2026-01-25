@@ -58,184 +58,176 @@ export default function NewAssetPage() {
 
     return (
         <div style={{ minHeight: '100vh', background: '#0f172a', color: 'white', padding: '20px' }}>
-            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                <header style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
-                    <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
-                        <ArrowLeft size={24} />
-                    </button>
-                    <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Register New Asset</h1>
-                </header>
+            <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '40px' }}>
 
-                <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '20px' }}>
+                {/* LEFT COLUMN - ASSET DETAILS */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
 
-                    {/* LEFT COLUMN - ASSET DETAILS */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {/* BASIC IDENTITY */}
+                    <div style={{ background: '#1e293b', padding: '30px', borderRadius: '16px', border: '1px solid #334155', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                        <h2 style={{ fontSize: '20px', marginBottom: '25px', color: '#eab308', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <Truck size={24} /> Vehicle Details
+                        </h2>
 
-                        {/* BASIC IDENTITY */}
-                        <div style={{ background: '#1e293b', padding: '20px', borderRadius: '12px', border: '1px solid #334155' }}>
-                            <h2 style={{ fontSize: '18px', marginBottom: '15px', color: '#eab308', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <Truck size={20} /> Vehicle Details
-                            </h2>
+                        <div style={{ marginBottom: '25px' }}>
+                            <label style={{ display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px', fontWeight: '500' }}>Asset Name / Callsign</label>
+                            <input
+                                type="text" required
+                                value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                                placeholder="e.g. ALS-Stallion-05"
+                                className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-xl text-white p-4 focus:outline-none focus:border-[#3b82f6] transition-colors"
+                                style={{ color: 'white', fontSize: '16px' }}
+                            />
+                        </div>
 
-                            <div style={{ marginBottom: '15px' }}>
-                                <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Asset Name / Callsign</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px', fontWeight: '500' }}>Type</label>
+                                <select
+                                    value={form.asset_type} onChange={e => setForm({ ...form, asset_type: e.target.value })}
+                                    className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-xl text-white p-4 focus:outline-none focus:border-[#3b82f6] transition-colors"
+                                    style={{ color: 'white', fontSize: '16px' }}
+                                >
+                                    <option value="TRUCK">Truck</option>
+                                    <option value="JEEP">Jeep</option>
+                                    <option value="TANKER">Fuel Tanker</option>
+                                    <option value="APC">APC</option>
+                                    <option value="BUS">Bus</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px', fontWeight: '500' }}>Capacity (Tons)</label>
                                 <input
-                                    type="text" required
-                                    value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                                    placeholder="e.g. ALS-Stallion-05"
-                                    className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
-                                    style={{ color: 'white' }}
+                                    type="number" step="0.1" min="0"
+                                    value={form.capacity_tons} onChange={e => setForm({ ...form, capacity_tons: parseFloat(e.target.value) })}
+                                    className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-xl text-white p-4 focus:outline-none focus:border-[#3b82f6] transition-colors"
+                                    style={{ color: 'white', fontSize: '16px' }}
                                 />
                             </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Type</label>
-                                    <select
-                                        value={form.asset_type} onChange={e => setForm({ ...form, asset_type: e.target.value })}
-                                        className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
-                                        style={{ color: 'white' }}
-                                    >
-                                        <option value="TRUCK">Truck</option>
-                                        <option value="JEEP">Jeep</option>
-                                        <option value="TANKER">Fuel Tanker</option>
-                                        <option value="APC">APC</option>
-                                        <option value="BUS">Bus</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Capacity (Tons)</label>
-                                    <input
-                                        type="number" step="0.1" min="0"
-                                        value={form.capacity_tons} onChange={e => setForm({ ...form, capacity_tons: parseFloat(e.target.value) })}
-                                        className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
-                                        style={{ color: 'white' }}
-                                    />
-                                </div>
-                            </div>
                         </div>
-
-                        {/* PERSONNEL & DRIVER */}
-                        <div style={{ background: '#1e293b', padding: '20px', borderRadius: '12px', border: '1px solid #334155' }}>
-                            <h2 style={{ fontSize: '18px', marginBottom: '15px', color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <Users size={20} /> Personnel & Logistics
-                            </h2>
-
-                            <div style={{ marginBottom: '15px' }}>
-                                <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Driver Name (Optional)</label>
-                                <div style={{ position: 'relative' }}>
-                                    <User size={16} style={{ position: 'absolute', top: '14px', left: '12px', color: '#64748b' }} />
-                                    <input
-                                        type="text"
-                                        value={form.driver_name} onChange={e => setForm({ ...form, driver_name: e.target.value })}
-                                        placeholder="Driver Name"
-                                        className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 pl-9 focus:outline-none focus:border-[#3b82f6]"
-                                        style={{ color: 'white' }}
-                                    />
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Personnel Count</label>
-                                    <input
-                                        type="number" min="0"
-                                        value={form.personnel_count} onChange={e => setForm({ ...form, personnel_count: parseInt(e.target.value) })}
-                                        className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
-                                        style={{ color: 'white' }}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Fuel Status (%)</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <Droplet size={16} style={{ position: 'absolute', top: '14px', left: '12px', color: '#64748b' }} />
-                                        <input
-                                            type="number" min="0" max="100"
-                                            value={form.fuel_status} onChange={e => setForm({ ...form, fuel_status: parseFloat(e.target.value) })}
-                                            className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 pl-9 focus:outline-none focus:border-[#3b82f6]"
-                                            style={{ color: 'white' }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
 
-                    {/* RIGHT COLUMN - LOCATION & SUBMIT */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div style={{ background: '#1e293b', padding: '20px', borderRadius: '12px', border: '1px solid #334155', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                            <h2 style={{ fontSize: '18px', marginBottom: '15px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <MapPin size={20} /> Current Location
-                            </h2>
+                    {/* PERSONNEL & DRIVER */}
+                    <div style={{ background: '#1e293b', padding: '30px', borderRadius: '16px', border: '1px solid #334155', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                        <h2 style={{ fontSize: '20px', marginBottom: '25px', color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <Users size={24} /> Personnel & Logistics
+                        </h2>
 
-                            {/* SEARCH */}
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Search Location</label>
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                    <input
-                                        type="text"
-                                        value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                                        placeholder="Enter city or place..."
-                                        className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-lg text-white p-3 focus:outline-none focus:border-[#3b82f6]"
-                                        style={{ color: 'white' }}
-                                    />
-                                    <button type="button" onClick={() => handleSearchLocation(searchQuery)} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0 15px', cursor: 'pointer' }}>
-                                        <Search size={18} />
-                                    </button>
-                                </div>
-                                {searchResults.length > 0 && (
-                                    <div style={{ background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', marginTop: '5px', maxHeight: '150px', overflowY: 'auto' }}>
-                                        {searchResults.map((res, idx) => (
-                                            <div key={idx} onClick={() => {
-                                                setForm({ ...form, current_lat: parseFloat(res.lat), current_long: parseFloat(res.lon) });
-                                                setSearchQuery(res.display_name.split(',')[0]);
-                                                setSearchResults([]);
-                                            }} style={{ padding: '10px', fontSize: '13px', borderBottom: '1px solid #1e293b', cursor: 'pointer' }} className="hover:bg-slate-800">
-                                                {res.display_name}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                        <div style={{ marginBottom: '25px' }}>
+                            <label style={{ display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px', fontWeight: '500' }}>Driver Name (Optional)</label>
+                            <div style={{ position: 'relative' }}>
+                                <User size={20} style={{ position: 'absolute', top: '16px', left: '16px', color: '#64748b' }} />
+                                <input
+                                    type="text"
+                                    value={form.driver_name} onChange={e => setForm({ ...form, driver_name: e.target.value })}
+                                    placeholder="Driver Name"
+                                    className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-xl text-white p-4 pl-12 focus:outline-none focus:border-[#3b82f6] transition-colors"
+                                    style={{ color: 'white', fontSize: '16px' }}
+                                />
                             </div>
+                        </div>
 
-                            {/* PRECISE COORDS */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Latitude</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px', fontWeight: '500' }}>Personnel Count</label>
+                                <input
+                                    type="number" min="0"
+                                    value={form.personnel_count} onChange={e => setForm({ ...form, personnel_count: parseInt(e.target.value) })}
+                                    className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-xl text-white p-4 focus:outline-none focus:border-[#3b82f6] transition-colors"
+                                    style={{ color: 'white', fontSize: '16px' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px', fontWeight: '500' }}>Fuel Status (%)</label>
+                                <div style={{ position: 'relative' }}>
+                                    <Droplet size={20} style={{ position: 'absolute', top: '16px', left: '16px', color: '#64748b' }} />
                                     <input
-                                        type="number" step="any"
-                                        value={form.current_lat} onChange={e => setForm({ ...form, current_lat: parseFloat(e.target.value) })}
-                                        style={{ width: '100%', padding: '12px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Longitude</label>
-                                    <input
-                                        type="number" step="any"
-                                        value={form.current_long} onChange={e => setForm({ ...form, current_long: parseFloat(e.target.value) })}
-                                        style={{ width: '100%', padding: '12px', background: '#0f172a', border: '1px solid #475569', borderRadius: '8px', color: 'white' }}
+                                        type="number" min="0" max="100"
+                                        value={form.fuel_status} onChange={e => setForm({ ...form, fuel_status: parseFloat(e.target.value) })}
+                                        className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-xl text-white p-4 pl-12 focus:outline-none focus:border-[#3b82f6] transition-colors"
+                                        style={{ color: 'white', fontSize: '16px' }}
                                     />
                                 </div>
                             </div>
+                        </div>
+                    </div>
 
-                            <div style={{ marginTop: 'auto' }}>
-                                <button type="submit" style={{
-                                    width: '100%', padding: '15px',
-                                    background: 'linear-gradient(to right, #10b981, #059669)',
-                                    color: 'black', fontWeight: 'bold', fontSize: '16px', border: 'none', borderRadius: '8px',
-                                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
-                                }}>
-                                    <Save size={20} />
-                                    Register Asset
+                </div>
+
+                {/* RIGHT COLUMN - LOCATION & SUBMIT */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                    <div style={{ background: '#1e293b', padding: '30px', borderRadius: '16px', border: '1px solid #334155', flex: 1, display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                        <h2 style={{ fontSize: '20px', marginBottom: '25px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <MapPin size={24} /> Current Location
+                        </h2>
+
+                        {/* SEARCH */}
+                        <div style={{ marginBottom: '30px' }}>
+                            <label style={{ display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px', fontWeight: '500' }}>Search Location</label>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <input
+                                    type="text"
+                                    value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                                    placeholder="Enter city or place..."
+                                    className="w-full box-border bg-[#0f172a] border border-[#475569] rounded-xl text-white p-4 focus:outline-none focus:border-[#3b82f6] transition-colors"
+                                    style={{ color: 'white', fontSize: '16px' }}
+                                />
+                                <button type="button" onClick={() => handleSearchLocation(searchQuery)} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '12px', padding: '0 20px', cursor: 'pointer' }}>
+                                    <Search size={22} />
                                 </button>
                             </div>
-
+                            {searchResults.length > 0 && (
+                                <div style={{ background: '#0f172a', border: '1px solid #475569', borderRadius: '12px', marginTop: '10px', maxHeight: '200px', overflowY: 'auto', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}>
+                                    {searchResults.map((res, idx) => (
+                                        <div key={idx} onClick={() => {
+                                            setForm({ ...form, current_lat: parseFloat(res.lat), current_long: parseFloat(res.lon) });
+                                            setSearchQuery(res.display_name.split(',')[0]);
+                                            setSearchResults([]);
+                                        }} style={{ padding: '15px', fontSize: '14px', borderBottom: '1px solid #1e293b', cursor: 'pointer' }} className="hover:bg-slate-800">
+                                            {res.display_name}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                    </div>
 
-                </form>
-            </div>
+                        {/* PRECISE COORDS */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px', fontWeight: '500' }}>Latitude</label>
+                                <input
+                                    type="number" step="any"
+                                    value={form.current_lat} onChange={e => setForm({ ...form, current_lat: parseFloat(e.target.value) })}
+                                    style={{ width: '100%', padding: '15px', background: '#0f172a', border: '1px solid #475569', borderRadius: '12px', color: 'white', fontSize: '16px' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '14px', color: '#94a3b8', marginBottom: '8px', fontWeight: '500' }}>Longitude</label>
+                                <input
+                                    type="number" step="any"
+                                    value={form.current_long} onChange={e => setForm({ ...form, current_long: parseFloat(e.target.value) })}
+                                    style={{ width: '100%', padding: '15px', background: '#0f172a', border: '1px solid #475569', borderRadius: '12px', color: 'white', fontSize: '16px' }}
+                                />
+                            </div>
+                        </div>
+
+                        <div style={{ marginTop: 'auto' }}>
+                            <button type="submit" style={{
+                                width: '100%', padding: '20px',
+                                background: 'linear-gradient(to right, #10b981, #059669)',
+                                color: 'black', fontWeight: 'bold', fontSize: '18px', border: 'none', borderRadius: '12px',
+                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+                                boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)'
+                            }}>
+                                <Save size={24} />
+                                Register Asset
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+            </form>
         </div>
     );
 }

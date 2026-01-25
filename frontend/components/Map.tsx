@@ -11,6 +11,7 @@ interface Asset {
   id: number;
   name: string;
   asset_type: string;
+  role?: string; // NEW
   asset_source?: string; // NEW
   current_lat?: number;
   current_long?: number;
@@ -189,16 +190,22 @@ export default function MapComponent({ assets, routes = [], convoys = [], checkp
 
 
     // --- RENDER CHECKPOINTS (TCPs) ---
-    // Create markers but only add to map if zoom level is sufficient
-    const currentZoom = map.getZoom();
-    // Default visibility thresholds
-    const showTCPsThreshold = 10;
-    const showAirportsThreshold = 6;
+    // VISIBILITY: Only show TCPs when a route/convoy is selected
 
     checkpoints.forEach(tcp => {
+      // Hide Airports/Airbases as previously requested
       const isAirport = tcp.checkpoint_type.includes('Airport') || tcp.checkpoint_type.includes('Airbase') || tcp.checkpoint_type.includes('AFS');
-      const badgeColor = isAirport ? '#3b82f6' : '#ef4444';
-      const badgeText = isAirport ? 'AP' : 'TC';
+      if (isAirport) return;
+
+      // Determine visibility: Show ALL TCPs if a route is selected
+      const isTransitCamp = tcp.checkpoint_type.includes('Transit Camp');
+      const shouldShow = selectedRouteId !== null;
+
+      // If not visible, don't render at all
+      if (!shouldShow) return;
+
+      const badgeColor = isTransitCamp ? '#f97316' : '#ef4444';
+      const badgeText = isTransitCamp ? 'TR' : 'TC';
 
       const iconHtml = `
           <div style="
@@ -225,14 +232,7 @@ export default function MapComponent({ assets, routes = [], convoys = [], checkp
         iconAnchor: [12, 12]
       });
 
-      const marker = L.marker([tcp.lat, tcp.long], { icon });
-
-      // Only add to map if zoom is sufficient
-      const isVisible = isAirport ? currentZoom > showAirportsThreshold : currentZoom > showTCPsThreshold;
-
-      if (isVisible) {
-        marker.addTo(map);
-      }
+      const marker = L.marker([tcp.lat, tcp.long], { icon }).addTo(map);
       checkpointMarkersRef.current.push(marker);
 
       marker.bindPopup(`
@@ -297,14 +297,44 @@ export default function MapComponent({ assets, routes = [], convoys = [], checkp
     // --- RENDER MOVING ASSETS (NO CLUSTER) ---
     movingAssets.forEach(asset => {
       if (asset.current_lat && asset.current_long) {
-        let color = asset.is_available ? '#10b981' : '#f59e0b';
-        if (asset.asset_source === 'CIVIL_OBSERVED') color = '#3b82f6'; // Blue for traffic
-        if (asset.asset_source === 'CIVIL_REQ') color = '#f97316'; // Orange for hired
+        // Default Color: Uniform Yellow (as requested)
+        let color = '#eab308'; // Default Convoy Yellow
+
+        // Check if this asset belongs to the currently selected route/convoy
+        // We link via Convoy Route ID -> Selected Route ID
+        // Or if we had Selected Convoy ID. 
+        // Current logic: We have selectedRouteId.
+        // We need to find if this asset's convoy is on that route.
+        const assetConvoy = convoys.find(c => c.id === asset.convoy_id);
+        const isSelectedConvoy = assetConvoy && assetConvoy.route_id === selectedRouteId;
+
+        if (isSelectedConvoy) {
+          // Reveal Role Colors
+          switch (asset.role) {
+            case 'ROP': color = '#facc15'; break; // Yellow-400
+            case 'QRT': color = '#ef4444'; break; // Red
+            case 'TECH': color = '#3b82f6'; break; // Blue
+            case 'AMBULANCE': color = '#d946ef'; break; // Fuchsia/Pink
+            case 'COMMS': color = '#06b6d4'; break; // Cyan
+            case 'COMMANDER': color = '#f59e0b'; break; // Amber-500 (Star)
+            case 'CARGO': color = '#10b981'; break; // Emerald (Standard Truck)
+            default: color = '#10b981';
+          }
+        } else {
+          // Non-selected convoys remain uniform yellow
+          // Or maybe Traffic Blue if civil?
+          if (asset.asset_source === 'CIVIL_OBSERVED') color = '#3b82f6';
+          if (asset.asset_source === 'CIVIL_REQ') color = '#f97316';
+        }
+
         const bearing = asset.bearing || 0;
         const iconHtml = `
               <div style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; transform: rotate(${bearing}deg); transition: transform 0.3s ease-out;">
                 <div style="width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 16px solid ${color}; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));"></div>
-                <div style="position: absolute; width: 4px; height: 4px; background: white; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+                ${asset.role === 'COMMANDER' && isSelectedConvoy ?
+            `<div style="position: absolute; color: white; font-size: 10px; font-weight: bold; top: 50%; left: 50%; transform: translate(-50%, -20%) rotate(${-bearing}deg);">★</div>` :
+            `<div style="position: absolute; width: 4px; height: 4px; background: white; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>`
+          }
               </div>
             `;
         const icon = L.divIcon({ html: iconHtml, className: 'custom-vehicle-icon', iconSize: [24, 24], iconAnchor: [12, 12] });
@@ -326,10 +356,8 @@ export default function MapComponent({ assets, routes = [], convoys = [], checkp
               <div style="font-family: system-ui; min-width: 150px; background: #0f172a; color: white; border: 1px solid #334155; padding: 10px; border-radius: 6px;">
                 <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">${asset.name}</div>
                 <div style="color: #94a3b8; font-size: 11px;">${asset.asset_type}</div>
+                <div style="color: ${color}; font-size: 11px; font-weight: bold;">Role: ${asset.role || 'Unknown'}</div>
                 <div style="font-size: 10px; color: #64748b;">Heading: ${Math.round(bearing)}°</div>
-                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #334155;">
-                  <span style="color: ${asset.is_available ? '#10b981' : '#f59e0b'}; font-weight: bold; font-size: 12px;">${asset.is_available ? '● Available' : '● Busy'}</span>
-                </div>
               </div>
             `;
         marker.bindPopup(popupContent);

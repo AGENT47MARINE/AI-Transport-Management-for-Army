@@ -5,7 +5,8 @@ class TransportAssetBase(BaseModel):
     name: str
     asset_type: str
     asset_source: str = "MILITARY"
-    capacity_tons: float
+    role: str = "CARGO"
+    capacity_tons: float = 0.0
     is_available: bool = True
     current_lat: Optional[float] = None
     current_long: Optional[float] = None

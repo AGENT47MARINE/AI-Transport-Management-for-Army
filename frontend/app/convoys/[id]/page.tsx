@@ -12,9 +12,11 @@ const MapComponent = dynamic(() => import('@/components/Map'), {
 export default function ConvoyDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
     const [convoy, setConvoy] = useState<any>(null);
+    const [checkpoints, setCheckpoints] = useState<any[]>([]); // NEW: Checkpoints state
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // Fetch convoy with polling for live updates
     useEffect(() => {
         const fetchConvoy = async () => {
             try {
@@ -22,15 +24,27 @@ export default function ConvoyDetailPage({ params }: { params: Promise<{ id: str
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 setConvoy(data);
+                setLoading(false);
             } catch (e: any) {
                 console.error('Fetch error:', e);
                 setError(e.message);
-            } finally {
                 setLoading(false);
             }
         };
-        fetchConvoy();
+
+        fetchConvoy(); // Initial fetch
+        const interval = setInterval(fetchConvoy, 2000); // Poll every 2s for live updates
+
+        return () => clearInterval(interval);
     }, [resolvedParams.id]);
+
+    // Fetch all checkpoints once
+    useEffect(() => {
+        fetch('http://localhost:8000/api/v1/checkpoints/')
+            .then(res => res.json())
+            .then(data => setCheckpoints(data))
+            .catch(err => console.error('Checkpoint fetch error:', err));
+    }, []);
 
     if (loading) {
         return (
@@ -92,12 +106,13 @@ export default function ConvoyDetailPage({ params }: { params: Promise<{ id: str
     return (
         <div style={{ position: 'relative', height: '100vh', width: '100vw', background: '#0f172a', overflow: 'hidden' }}>
 
-            {/* MAP LAYER */}
+            {/* MAP LAYER - Now with checkpoints and live updates */}
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
                 <MapComponent
                     assets={assets}
                     routes={route}
                     convoys={[convoy]}
+                    checkpoints={checkpoints}
                     initialSelectedRouteId={convoy.route_id}
                 />
             </div>
