@@ -51,6 +51,7 @@ export default function Dashboard() {
     const [checkpoints, setCheckpoints] = useState<any[]>([]); // TCPs
     const [activeTab, setActiveTab] = useState<'assets' | 'convoys'>('assets');
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [showCivilCars, setShowCivilCars] = useState(true); // Toggle Civil Traffic
 
     // Search State for Sidebar
     const [assetSearch, setAssetSearch] = useState('');
@@ -119,9 +120,9 @@ export default function Dashboard() {
                     assets={assets}
                     routes={routes}
                     convoys={convoys}
-                    checkpoints={checkpoints}
                     draftRoute={routeForm}
                     onRoutePointUpdate={handleRoutePointUpdate}
+                    showCivilCars={showCivilCars}
                 />
             </div>
 
@@ -194,6 +195,26 @@ export default function Dashboard() {
                         }}
                     >
                         <span></span> SCAN THREATS
+                    </button>
+
+                    {/* Civil Cars Toggle */}
+                    <button
+                        onClick={() => setShowCivilCars(!showCivilCars)}
+                        style={{
+                            background: showCivilCars ? 'rgba(59, 130, 246, 0.3)' : 'rgba(100, 116, 139, 0.2)',
+                            border: showCivilCars ? '1px solid rgba(59, 130, 246, 0.6)' : '1px solid rgba(100, 116, 139, 0.4)',
+                            color: showCivilCars ? '#3b82f6' : '#94a3b8',
+                            padding: '5px 12px',
+                            borderRadius: 4,
+                            fontSize: 11,
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 5
+                        }}
+                    >
+                        🚗 {showCivilCars ? 'HIDE' : 'SHOW'} CIVIL
                     </button>
 
                     <div style={{

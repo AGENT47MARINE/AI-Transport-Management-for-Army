@@ -11,6 +11,8 @@ from app.core.database import SessionLocal, engine, Base
 from app.models.asset import TransportAsset
 from app.models.convoy import Convoy
 from app.models.route import Route
+from app.models.user import User
+from app.core.security import get_password_hash
 from datetime import datetime
 from sqlalchemy import text
 
@@ -55,6 +57,17 @@ async def seed_data():
     
     print("Seeding High-Fidelity Router Data...")
     async with SessionLocal() as db:
+        
+        # --- SEED USERS ---
+        print("Seeding Users...")
+        demo_users = [
+            User(username="commander", hashed_password=get_password_hash("admin123"), role="COMMANDER", is_active=True),
+            User(username="tcp_officer", hashed_password=get_password_hash("tcp123"), role="TCP_INCHARGE", is_active=True),
+            User(username="operator", hashed_password=get_password_hash("operator123"), role="COMMANDER", is_active=True),
+        ]
+        db.add_all(demo_users)
+        await db.flush()
+        print(f"Added {len(demo_users)} users.")
         
         # JAMMU AIRPORT (IXJ) -> SRINAGAR AIRPORT (SXR)
         start_pt = [32.6896, 74.8376]
@@ -127,16 +140,23 @@ async def seed_data():
         # Commit route first to get ID
         await db.flush()
 
-        # Convoy
+        # --- CONVOY 1: Jammu -> Srinagar ---
         convoy1 = Convoy(name="Air-Link-Supply-01", start_location="Jammu Airport", end_location="Srinagar Airport", status="IN_TRANSIT", start_time=datetime.utcnow(), route_id=route_main.id)
         db.add(convoy1)
-        
-        # Commit convoy to get ID
         await db.flush()
 
-        # Calculate mid-point for asset placement
+        # Calculate mid-point for asset placement (Convoy 1)
         mid_idx = len(waypoints_high_fidelity) // 2
         mid_pt = waypoints_high_fidelity[mid_idx]
+
+        # --- CONVOY 2: Udhampur -> Leh (TC to TC) ---
+        convoy2 = Convoy(name="Leh-Resupply-02", start_location="TCP-2 Udhampur", end_location="TCP-19 Leh", status="IN_TRANSIT", start_time=datetime.utcnow(), route_id=route_leh.id)
+        db.add(convoy2)
+        await db.flush()
+
+        # Mid-point for Convoy 2
+        mid_idx2 = len(wp_leh_kgl) // 2 if wp_leh_kgl else 0
+        mid_pt2 = wp_leh_kgl[mid_idx2] if wp_leh_kgl else [34.3, 76.5]
 
         # Assets
         assets = [
@@ -152,7 +172,7 @@ async def seed_data():
             TransportAsset(name="SXR-01 (Rapid)", asset_type="Maruti Gypsy", capacity_tons=0.5, is_available=True, current_lat=end_pt[0], current_long=end_pt[1], fuel_status=100.0, driver_name="Sub. Major Khan", personnel_count=3),
             TransportAsset(name="SXR-Bus-01", asset_type="Bus", capacity_tons=0.0, is_available=True, current_lat=end_pt[0], current_long=end_pt[1], fuel_status=95.0, driver_name="Civ. Driver Ram", personnel_count=30),
 
-            # Assets In Transit (Assigned to Convoy) - FULL FORMATION
+            # --- CONVOY 1 ASSETS (Jammu -> Srinagar) - FULL FORMATION ---
             TransportAsset(name="CVY-Alpha-ROP", asset_type="Maruti Gypsy", capacity_tons=0.5, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=90.0, convoy_id=convoy1.id, driver_name="Nk. Vikram", personnel_count=4, role="ROP"),
             TransportAsset(name="CVY-Alpha-QRT-Front", asset_type="Light Vehicle", capacity_tons=0.5, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=88.0, convoy_id=convoy1.id, driver_name="L/Nk. Raju", personnel_count=4, role="QRT"),
             TransportAsset(name="CVY-Alpha-Tech", asset_type="Recovery Vehicle", capacity_tons=5.0, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=85.0, convoy_id=convoy1.id, driver_name="Hav. Kumar", personnel_count=3, role="TECH"),
@@ -162,6 +182,18 @@ async def seed_data():
             TransportAsset(name="CVY-Alpha-Comms", asset_type="Comms Vehicle", capacity_tons=1.5, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=70.0, convoy_id=convoy1.id, driver_name="Sig. Naik", personnel_count=3, role="COMMS"),
             TransportAsset(name="CVY-Alpha-Commander", asset_type="Maruti Gypsy (Command)", capacity_tons=0.5, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=85.0, convoy_id=convoy1.id, driver_name="Major Rathore", personnel_count=3, role="COMMANDER"),
             TransportAsset(name="CVY-Alpha-QRT-Rear", asset_type="Light Vehicle", capacity_tons=0.5, is_available=False, current_lat=mid_pt[0], current_long=mid_pt[1], fuel_status=82.0, convoy_id=convoy1.id, driver_name="Sep. Ajay", personnel_count=4, role="QRT"),
+            
+            # --- CONVOY 2 ASSETS (Udhampur -> Leh) - FULL FORMATION ---
+            TransportAsset(name="CVY-Bravo-ROP", asset_type="Maruti Gypsy", capacity_tons=0.5, is_available=False, current_lat=mid_pt2[0], current_long=mid_pt2[1], fuel_status=88.0, convoy_id=convoy2.id, driver_name="Nk. Dorje", personnel_count=4, role="ROP"),
+            TransportAsset(name="CVY-Bravo-QRT-Front", asset_type="Light Vehicle", capacity_tons=0.5, is_available=False, current_lat=mid_pt2[0], current_long=mid_pt2[1], fuel_status=85.0, convoy_id=convoy2.id, driver_name="L/Nk. Tenzin", personnel_count=4, role="QRT"),
+            TransportAsset(name="CVY-Bravo-Tech", asset_type="Recovery HEMTT", capacity_tons=8.0, is_available=False, current_lat=mid_pt2[0], current_long=mid_pt2[1], fuel_status=80.0, convoy_id=convoy2.id, driver_name="Hav. Rigzin", personnel_count=3, role="TECH"),
+            TransportAsset(name="CVY-Bravo-Cargo-01", asset_type="Tatra 6x6", capacity_tons=8.0, is_available=False, current_lat=mid_pt2[0], current_long=mid_pt2[1], fuel_status=70.0, convoy_id=convoy2.id, driver_name="Nk. Stanzin", personnel_count=10, role="CARGO"),
+            TransportAsset(name="CVY-Bravo-Cargo-02", asset_type="Tatra 8x8", capacity_tons=10.0, is_available=False, current_lat=mid_pt2[0], current_long=mid_pt2[1], fuel_status=68.0, convoy_id=convoy2.id, driver_name="Hav. Lobzang", personnel_count=5, role="CARGO"),
+            TransportAsset(name="CVY-Bravo-Cargo-03", asset_type="ALS Stallion", capacity_tons=5.0, is_available=False, current_lat=mid_pt2[0], current_long=mid_pt2[1], fuel_status=65.0, convoy_id=convoy2.id, driver_name="Sep. Norbu", personnel_count=12, role="CARGO"),
+            TransportAsset(name="CVY-Bravo-Ambulance", asset_type="Army Ambulance", capacity_tons=2.0, is_available=False, current_lat=mid_pt2[0], current_long=mid_pt2[1], fuel_status=72.0, convoy_id=convoy2.id, driver_name="Sep. Tsewang", personnel_count=2, role="AMBULANCE"),
+            TransportAsset(name="CVY-Bravo-Comms", asset_type="Comms Vehicle", capacity_tons=1.5, is_available=False, current_lat=mid_pt2[0], current_long=mid_pt2[1], fuel_status=75.0, convoy_id=convoy2.id, driver_name="Sig. Paldan", personnel_count=3, role="COMMS"),
+            TransportAsset(name="CVY-Bravo-Commander", asset_type="Gypsy (Command)", capacity_tons=0.5, is_available=False, current_lat=mid_pt2[0], current_long=mid_pt2[1], fuel_status=80.0, convoy_id=convoy2.id, driver_name="Lt. Col. Dorjay", personnel_count=3, role="COMMANDER"),
+            TransportAsset(name="CVY-Bravo-QRT-Rear", asset_type="Light Vehicle", capacity_tons=0.5, is_available=False, current_lat=mid_pt2[0], current_long=mid_pt2[1], fuel_status=78.0, convoy_id=convoy2.id, driver_name="Sep. Angchuk", personnel_count=4, role="QRT"),
             
             # Idle/Busy Assets elsewhere
             TransportAsset(name="Udhampur-Recov", asset_type="Recovery Vehicle", capacity_tons=15.0, is_available=True, current_lat=32.9266, current_long=75.1370, fuel_status=88.0, driver_name="Hav. Tech Singh", personnel_count=3),

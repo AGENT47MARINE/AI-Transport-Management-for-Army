@@ -11,13 +11,17 @@ interface Asset {
   id: number;
   name: string;
   asset_type: string;
-  role?: string; // NEW
-  asset_source?: string; // NEW
+  role?: string;
+  asset_source?: string;
   current_lat?: number;
   current_long?: number;
   bearing?: number;
   is_available: boolean;
   convoy_id?: number | null;
+  driver_name?: string;
+  personnel_count?: number;
+  fuel_status?: number;
+  capacity_tons?: number;
 }
 
 interface Route {
@@ -63,9 +67,10 @@ interface MapProps {
   };
   onRoutePointUpdate?: (point: 'start' | 'end', lat: number, lng: number) => void;
   initialSelectedRouteId?: number;
+  showCivilCars?: boolean;
 }
 
-export default function MapComponent({ assets, routes = [], convoys = [], checkpoints = [], draftRoute, onRoutePointUpdate, initialSelectedRouteId }: MapProps) {
+export default function MapComponent({ assets, routes = [], convoys = [], checkpoints = [], draftRoute, onRoutePointUpdate, initialSelectedRouteId, showCivilCars = true }: MapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Layer[]>([]); // Store non-clustered layers (routes, draft markers)
   const clusterGroupRef = useRef<L.MarkerClusterGroup | null>(null);
@@ -178,8 +183,13 @@ export default function MapComponent({ assets, routes = [], convoys = [], checkp
     if (!map) return;
 
     // 1. Separate Assets: Clustered (Available/Static) vs Non-Clustered (In Convoy/Busy)
-    const staticAssets = assets.filter(a => !a.convoy_id);
-    const movingAssets = assets.filter(a => a.convoy_id);
+    // Filter out civil cars if toggle is off
+    const filteredAssets = showCivilCars
+      ? assets
+      : assets.filter(a => a.asset_source !== 'CIVIL_OBSERVED' && a.asset_source !== 'CIVIL_REQ');
+
+    const staticAssets = filteredAssets.filter(a => !a.convoy_id);
+    const movingAssets = filteredAssets.filter(a => a.convoy_id);
 
     // Remove old layers
     markersRef.current.forEach(layer => layer.remove());
@@ -353,11 +363,24 @@ export default function MapComponent({ assets, routes = [], convoys = [], checkp
         });
 
         const popupContent = `
-              <div style="font-family: system-ui; min-width: 150px; background: #0f172a; color: white; border: 1px solid #334155; padding: 10px; border-radius: 6px;">
-                <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">${asset.name}</div>
-                <div style="color: #94a3b8; font-size: 11px;">${asset.asset_type}</div>
-                <div style="color: ${color}; font-size: 11px; font-weight: bold;">Role: ${asset.role || 'Unknown'}</div>
-                <div style="font-size: 10px; color: #64748b;">Heading: ${Math.round(bearing)}°</div>
+              <div style="font-family: system-ui; min-width: 200px; background: #0f172a; color: white; border: 1px solid #334155; padding: 12px; border-radius: 8px;">
+                <div style="font-weight: bold; font-size: 15px; margin-bottom: 8px; color: ${color}; border-bottom: 1px solid #334155; padding-bottom: 6px;">${asset.name}</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px;">
+                  <div style="color: #64748b;">Type:</div>
+                  <div style="color: #cbd5e1;">${asset.asset_type}</div>
+                  <div style="color: #64748b;">Role:</div>
+                  <div style="color: ${color}; font-weight: bold;">${asset.role || 'CARGO'}</div>
+                  <div style="color: #64748b;">Driver:</div>
+                  <div style="color: #cbd5e1;">${asset.driver_name || 'N/A'}</div>
+                  <div style="color: #64748b;">Personnel:</div>
+                  <div style="color: #cbd5e1;">${asset.personnel_count || 0} pax</div>
+                  <div style="color: #64748b;">Capacity:</div>
+                  <div style="color: #cbd5e1;">${asset.capacity_tons || 0} tons</div>
+                  <div style="color: #64748b;">Fuel:</div>
+                  <div style="color: ${(asset.fuel_status || 0) > 50 ? '#10b981' : '#f59e0b'};">${asset.fuel_status || 0}%</div>
+                  <div style="color: #64748b;">Heading:</div>
+                  <div style="color: #cbd5e1;">${Math.round(bearing)}°</div>
+                </div>
               </div>
             `;
         marker.bindPopup(popupContent);
@@ -496,7 +519,7 @@ export default function MapComponent({ assets, routes = [], convoys = [], checkp
 
 
 
-  }, [assets, routes, draftRoute, checkpoints, convoys, selectedRouteId]); // Re-run when data changes
+  }, [assets, routes, draftRoute, checkpoints, convoys, selectedRouteId, showCivilCars]); // Re-run when data changes
 
   return (
     <div

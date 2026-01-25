@@ -10,6 +10,7 @@ class TransportAssetBase(BaseModel):
     is_available: bool = True
     current_lat: Optional[float] = None
     current_long: Optional[float] = None
+    bearing: Optional[float] = 0.0
     fuel_status: float = 100.0
     driver_name: Optional[str] = None
     personnel_count: Optional[int] = 0
